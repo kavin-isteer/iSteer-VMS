@@ -1,0 +1,25 @@
+package com.isteer.vms.dao.rowmapper;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import org.springframework.jdbc.core.RowMapper;
+
+import com.isteer.vms.model.Application;
+
+public class ApplicationRowMapper implements RowMapper<Application>{
+
+	@Override
+	public Application mapRow(ResultSet rs, int rowNum) throws SQLException {
+		Application application = new Application();
+		application.setId(rs.getLong("id"));
+		application.setUuid(rs.getString("uuid"));
+		application.setSoftwareName(rs.getString("name"));
+		application.setSoftwareVersion(rs.getString("version"));
+		application.setVendorName(rs.getString("vendor_name"));
+		application.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+		
+		return application;
+	}
+
+}
