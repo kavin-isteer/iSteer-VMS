@@ -18,6 +18,7 @@ import com.isteer.vms.dto.SoftwarePayloadDto;
 import com.isteer.vms.model.Application;
 import com.isteer.vms.model.ComputerApplication;
 import com.isteer.vms.service.ApplicationService;
+import com.isteer.vms.service.VulnerabilityService;
 
 @Service
 public class ApplicationServiceImpl implements ApplicationService {
@@ -26,6 +27,9 @@ public class ApplicationServiceImpl implements ApplicationService {
 
 	@Autowired
 	private ApplicationDao applicationDao;
+	
+	@Autowired
+	private VulnerabilityService vulnerabilityService;
 
 	@Override
 	@Transactional
@@ -161,6 +165,7 @@ public class ApplicationServiceImpl implements ApplicationService {
 			return null;
 		}
 		logger.info("Successfully inserted {} new applications into the database", applications.size());
+		vulnerabilityService.analyzeAndSaveApplicationVulnerabilitiesAsync(applications);
 		return applications;
 
 	}
