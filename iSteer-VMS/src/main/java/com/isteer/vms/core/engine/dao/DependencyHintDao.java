@@ -9,19 +9,19 @@ import java.util.List;
 
 import org.springframework.stereotype.Repository;
 
-import com.isteer.vms.core.engine.model.DependencyHint;
+import com.isteer.vms.core.engine.model.CpeHint;
 import com.isteer.vms.core.engine.enums.HintAddedBy;
 
 @Repository
 public class DependencyHintDao {
-	public List<DependencyHint> getAllDependencyHints(Connection con) {
+	public List<CpeHint> getAllDependencyHints(Connection con) {
 		String query = "SELECT id,type,match_key,standardized_name,confidence,description,created_at,updated_at,addedBy FROM dependency_hints";
-		List<DependencyHint> hints = new ArrayList<>();
+		List<CpeHint> hints = new ArrayList<>();
 		try {
 			PreparedStatement psc = con.prepareStatement(query);
 			ResultSet rs = psc.executeQuery();
 			while (rs.next()) {
-				DependencyHint hint = new DependencyHint();
+				CpeHint hint = new CpeHint();
 				hint.setId(rs.getInt(1));
 				hint.setType(rs.getString(2));
 				hint.setMatch_key(rs.getString(3));
@@ -44,16 +44,16 @@ public class DependencyHintDao {
 		return hints;
 	}
 
-	public List<DependencyHint> getAllVendorDependencyHints(Connection con, String evidence_type) {
+	public List<CpeHint> getAllVendorDependencyHints(Connection con, String evidence_type) {
 		String query = "SELECT id,type,match_key,standardized_name,confidence,description,created_at,updated_at FROM dependency_hints WHERE type = ? AND evidence_type=?";
-		List<DependencyHint> hints = new ArrayList<>();
+		List<CpeHint> hints = new ArrayList<>();
 		try {
 			PreparedStatement psc = con.prepareStatement(query);
 			psc.setString(1, "vendor");
 			psc.setString(2, evidence_type);
 			ResultSet rs = psc.executeQuery();
 			while (rs.next()) {
-				DependencyHint hint = new DependencyHint();
+				CpeHint hint = new CpeHint();
 				hint.setId(rs.getInt(1));
 				hint.setType(rs.getString(2));
 				hint.setMatch_key(rs.getString(3));
@@ -75,15 +75,15 @@ public class DependencyHintDao {
 		return hints;
 	}
 
-	public List<DependencyHint> getAllVendorDependencyHints(Connection con) {
+	public List<CpeHint> getAllVendorDependencyHints(Connection con) {
 		String query = "SELECT id,type,match_key,standardized_name,confidence,description,created_at,updated_at,evidence_type,addedBy FROM dependency_hints WHERE type = ?";
-		List<DependencyHint> hints = new ArrayList<>();
+		List<CpeHint> hints = new ArrayList<>();
 		try {
 			PreparedStatement psc = con.prepareStatement(query);
 			psc.setString(1, "vendor");
 			ResultSet rs = psc.executeQuery();
 			while (rs.next()) {
-				DependencyHint hint = new DependencyHint();
+				CpeHint hint = new CpeHint();
 				hint.setId(rs.getInt(1));
 				hint.setType(rs.getString(2));
 				hint.setMatch_key(rs.getString(3));
@@ -106,16 +106,16 @@ public class DependencyHintDao {
 		return hints;
 	}
 
-	public List<DependencyHint> getAllProductDependencyHints(Connection con, String evidence_type) {
+	public List<CpeHint> getAllProductDependencyHints(Connection con, String evidence_type) {
 		String query = "SELECT id,type,match_key,standardized_name,confidence,description,created_at,updated_at,addedBy FROM dependency_hints WHERE type = ? AND evidence_type=?";
-		List<DependencyHint> hints = new ArrayList<>();
+		List<CpeHint> hints = new ArrayList<>();
 		try {
 			PreparedStatement psc = con.prepareStatement(query);
 			psc.setString(1, "product");
 			psc.setString(2, evidence_type);
 			ResultSet rs = psc.executeQuery();
 			while (rs.next()) {
-				DependencyHint hint = new DependencyHint();
+				CpeHint hint = new CpeHint();
 				hint.setId(rs.getInt(1));
 				hint.setType(rs.getString(2));
 				hint.setMatch_key(rs.getString(3));
@@ -137,7 +137,7 @@ public class DependencyHintDao {
 		return hints;
 	}
 
-	public int addDependencyHint(Connection con, DependencyHint hint) {
+	public int addDependencyHint(Connection con, CpeHint hint) {
 		// String query = "INSERT INTO dependency_hints (type, match_key,
 		// standardized_name, confidence, description, evidence_type) VALUES
 		// (?,?,?,?,?,?)";
@@ -198,7 +198,7 @@ public class DependencyHintDao {
 			psc.setString(3, type);
 			try (ResultSet rs = psc.executeQuery()) {
 				while (rs.next()) {
-					DependencyHint hint = new DependencyHint();
+					CpeHint hint = new CpeHint();
 					hint.setId(rs.getInt(1));
 					hint.setType(rs.getString(2));
 					hint.setMatch_key(rs.getString(3));

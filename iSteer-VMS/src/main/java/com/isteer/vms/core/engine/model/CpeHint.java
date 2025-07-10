@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 import com.isteer.vms.core.engine.enums.HintAddedBy;
 
-public class DependencyHint {
+public class CpeHint {
 	private Integer id;
 	private String type;
 	private String match_key;
