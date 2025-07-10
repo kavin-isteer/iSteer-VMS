@@ -20,6 +20,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.isteer.vms.core.engine.model.BaseApplication;
 import com.isteer.vms.core.engine.model.CpeName;
 import com.isteer.vms.core.engine.model.VulnerabilitiesForCpeName;
 import com.isteer.vms.core.engine.model.Vulnerability;
@@ -41,24 +42,23 @@ public class NvdClient {
 	/**
      * Fetches and attaches vulnerability data for a given dependency based on its CPE enumeration.
      *
-     * @param dependency The dependency model containing CPE info.
+     * @param application The dependency model containing CPE info.
      * @return The updated dependency model with vulnerabilities, if any.
      */
-	public DependencyModel fetchVulnerabilitiesForDependency(DependencyModel dependency) {
-		if (dependency == null || dependency.getCpeEnumeration() == null) {
+	public BaseApplication fetchVulnerabilitiesForDependency(BaseApplication application) {
+		if (application == null || application.getCpeEnumeration() == null) {
 			// No dependency or CPE info available; return as is or null
-			return dependency;
+			return application;
 		}
 
-		CpeName cpeNameModel = dependency.getCpeEnumeration();
+		CpeName cpeNameModel = application.getCpeEnumeration();
 		String cpeName = cpeNameModel.getCPE23Uri();
 		if (cpeName == null || cpeName.isEmpty()) {
-			return dependency;
+			return application;
 		}
 
 		List<CpeName> likelyCPEs = new ArrayList<>();
 		Object cveApiResponse = null;
-		Object cpeApiResponse = null;
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("apiKey", API_KEY);
@@ -75,9 +75,9 @@ public class NvdClient {
 					VulnerabilitiesForCpeName parsedVulnerability = new VulnerabilitiesForCpeName();
 					parsedVulnerability.setVulnerabilities(parseCveApiResponse(cveApiResponse));
 					for (Vulnerability vulnerabilityDetail : parsedVulnerability.getVulnerabilities()) {
-						dependency.addVulnerabilities(vulnerabilityDetail);
+						application.addVulnerabilities(vulnerabilityDetail);
 					}
-					dependency.getCpeEnumeration().setValidCpe(true);
+					application.getCpeEnumeration().setValidCpe(true);
 				} else {
 					throw new NvdApiException("CVE API failed", cveResponse.getStatusCode().value());
 				}
@@ -92,7 +92,7 @@ public class NvdClient {
 			e.printStackTrace();
 		}
 
-		return dependency;
+		return application;
 	}
 	
 	/**

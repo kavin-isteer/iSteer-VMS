@@ -10,7 +10,7 @@ public class BaseApplication {
 	private Application application;
 	private List<Evidence> vendorEvidence = new ArrayList<>();
 	private List<Evidence> productEvidence = new ArrayList<>();
-	private List<Evidence> versionEvidences = new ArrayList<>();
+	private List<Evidence> versionEvidence = new ArrayList<>();
 	private CpeName cpeEnumeration;
 	private List<Vulnerability> vulnerabilities = new ArrayList<>();
 	private List<CpeName> likelyCPEs=new ArrayList<>();
@@ -39,11 +39,11 @@ public class BaseApplication {
 	public void addProductEvidence(Evidence productEvidence) {
 		this.productEvidence.add(productEvidence);
 	}
-	public List<Evidence> getVersionEvidences() {
-		return versionEvidences;
+	public List<Evidence> getVersionEvidence() {
+		return versionEvidence;
 	}
-	public void addVersionEvidences(Evidence versionEvidences) {
-		this.versionEvidences.add(versionEvidences);
+	public void addVersionEvidence(Evidence versionEvidence) {
+		this.versionEvidence.add(versionEvidence);
 	}
 	public CpeName getCpeEnumeration() {
 		return cpeEnumeration;
@@ -67,7 +67,7 @@ public class BaseApplication {
 	@Override
 	public String toString() {
 		return "BaseApplication [application=" + application + ", vendorEvidence=" + vendorEvidence
-				+ ", productEvidence=" + productEvidence + ", versionEvidences=" + versionEvidences
+				+ ", productEvidence=" + productEvidence + ", versionEvidences=" + versionEvidence
 				+ ", cpeEnumeration=" + cpeEnumeration + ", vulnerabilities=" + vulnerabilities + ", likelyCPEs="
 				+ likelyCPEs + "]";
 	}
