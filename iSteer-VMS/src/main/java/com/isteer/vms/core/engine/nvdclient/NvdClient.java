@@ -35,7 +35,6 @@ public class NvdClient {
 	RestTemplate restTemplate;
 	
 	private static final String CVE_BASE_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0";
-	private static final String CPE_BASE_URL = "https://services.nvd.nist.gov/rest/json/cpes/2.0";
 	@Value("${nvd.api.key}")
 	private String API_KEY;
 	
@@ -57,7 +56,6 @@ public class NvdClient {
 			return application;
 		}
 
-		List<CpeName> likelyCPEs = new ArrayList<>();
 		Object cveApiResponse = null;
 
 		HttpHeaders headers = new HttpHeaders();

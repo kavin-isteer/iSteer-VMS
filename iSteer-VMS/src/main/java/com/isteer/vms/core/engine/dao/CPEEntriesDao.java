@@ -20,7 +20,7 @@ public class CPEEntriesDao {
 	JdbcTemplate jdbcTemplate;
 	
 	public List<String> getDistinctVendorsList()  {
-		String sql = "select distinct(vendor) from cpe_entries";
+		String sql = "select distinct(vendor) from cpe_dictionary";
 		 return jdbcTemplate.query(sql, (rs, rowNum) -> rs.getString("vendor"));
 	}
 
@@ -69,7 +69,7 @@ public class CPEEntriesDao {
 
 	     // Step 3: Execute the main JOIN query and map the result set to CpeEntryModel
 	        String sql = "SELECT id, cpe_name, cpe_title, vendor, product, version, update_date, deprecated "
-	                + "FROM cpe_entries c "
+	                + "FROM cpe_dictionary c "
 	                + "JOIN temp_vendors v ON c.vendor = v.vendors";
 
 	        // Using JdbcTemplate to execute the query and map the result
@@ -78,18 +78,18 @@ public class CPEEntriesDao {
 
 	public List<CpeEntry> getAllCpeEntries() {
 		String sql = "SELECT id, cpe_name, cpe_title, vendor, product, version, update_date, deprecated "
-				+ "FROM cpe_entries c ";
+				+ "FROM cpe_dictionary c ";
 		return jdbcTemplate.query(sql,new CpeEntryRowMapper());
 	}
 
 	public List<CpeEntry> getCpeEntries(int lastId) {
-		String sql = "SELECT id, cpe_name, cpe_title, vendor, product, version, update_date, deprecated FROM cpe_entries WHERE id > ? ORDER BY id LIMIT 100000";
+		String sql = "SELECT id, cpe_name, cpe_title, vendor, product, version, update_date, deprecated FROM cpe_dictionary WHERE id > ? ORDER BY id LIMIT 100000";
 		return jdbcTemplate.query(sql, new CpeEntryRowMapper(),new Object[]{lastId});
 	}
 	
 	public List<CpeEntry> getAllCpeEntriesWithOffset(int offset, int limit) throws SQLException  {
 	    String sql = "SELECT id, cpe_name, cpe_title, vendor, product, version, update_date, deprecated "
-	               + "FROM cpe_entries "
+	               + "FROM cpe_dictionary "
 	               + "ORDER BY id "
 	               + "LIMIT ? OFFSET ?";
 

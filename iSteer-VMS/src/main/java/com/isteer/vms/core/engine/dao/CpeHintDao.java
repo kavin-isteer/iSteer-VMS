@@ -18,32 +18,32 @@ public class CpeHintDao {
 	JdbcTemplate jdbcTemplate;
 
 	public List<CpeHint> getAllCpeHints(JdbcTemplate jdbcTemplate) {
-		String query = "SELECT id, type, match_key, standardized_name, confidence, description, created_at, updated_at,evidence_type, addedBy FROM dependency_hints";
+		String query = "SELECT id, type, match_key, standardized_name, confidence, description, created_at, updated_at,evidence_type, addedBy FROM cpe_hints";
 		return jdbcTemplate.query(query, new CpeHintRowMapper());
 	}
 
 	public List<CpeHint> getAllVendorCpeHints(String evidenceType) {
-		String query = "SELECT id, type, match_key, standardized_name, confidence, description, created_at, updated_at,evidence_type, addedBy FROM dependency_hints WHERE type = ? AND evidence_type = ?";
+		String query = "SELECT id, type, match_key, standardized_name, confidence, description, created_at, updated_at,evidence_type, addedBy FROM cpe_hints WHERE type = ? AND evidence_type = ?";
 		return jdbcTemplate.query(query, new CpeHintRowMapper(), new Object[] { "vendor", evidenceType });
 	}
 
 	public List<CpeHint> getAllVendorCpeHints() {
-		String query = "SELECT id, type, match_key, standardized_name, confidence, description, created_at, updated_at,evidence_type, addedBy FROM dependency_hints WHERE type = ?";
+		String query = "SELECT id, type, match_key, standardized_name, confidence, description, created_at, updated_at,evidence_type, addedBy FROM cpe_hints WHERE type = ?";
 		return jdbcTemplate.query(query, new CpeHintRowMapper(), new Object[] { "vendor" });
 	}
 
 	public List<CpeHint> getAllProductrCpeHints(String evidenceType) {
-		String query = "SELECT id, type, match_key, standardized_name, confidence, description, created_at, updated_at,evidence_type, addedBy FROM dependency_hints WHERE type = ? AND evidence_type = ?";
+		String query = "SELECT id, type, match_key, standardized_name, confidence, description, created_at, updated_at,evidence_type, addedBy FROM cpe_hints WHERE type = ? AND evidence_type = ?";
 		return jdbcTemplate.query(query, new CpeHintRowMapper(), new Object[] { "product", evidenceType });
 	}
 
 	public int addDependencyHint(JdbcTemplate jdbcTemplate, CpeHint hint) {
 		// Query to check if record exists
-		String checkQuery = "SELECT COUNT(*) FROM dependency_hints WHERE type = ? AND match_key = ? AND evidence_type = ?";
+		String checkQuery = "SELECT COUNT(*) FROM cpe_hints WHERE type = ? AND match_key = ? AND evidence_type = ?";
 		// Query to insert a new record
-		String insertQuery = "INSERT INTO dependency_hints (type, match_key, standardized_name, confidence, description, evidence_type, addedBy) VALUES (?, ?, ?, ?, ?, ?, ?)";
+		String insertQuery = "INSERT INTO cpe_hints (type, match_key, standardized_name, confidence, description, evidence_type, addedBy) VALUES (?, ?, ?, ?, ?, ?, ?)";
 		// Query to update an existing record
-		String updateQuery = "UPDATE dependency_hints SET standardized_name = ?, confidence = ?, description = ?, evidence_type = ?, addedBy = ? WHERE type = ? AND match_key = ?";
+		String updateQuery = "UPDATE cpe_hints SET standardized_name = ?, confidence = ?, description = ?, evidence_type = ?, addedBy = ? WHERE type = ? AND match_key = ?";
 
 		// Step 1: Check if the record exists using JdbcTemplate
 		int count = jdbcTemplate.queryForObject(checkQuery, Integer.class,
@@ -65,7 +65,7 @@ public class CpeHintDao {
 	}
 
 	public String getStandardisedNameForMatchKey(String matchKey, String type) {
-		String query = "SELECT standardized_name from dependency_hints WHERE match_key = ? AND evidence_type = ? AND type = ?";
+		String query = "SELECT standardized_name from cpe_hints WHERE match_key = ? AND evidence_type = ? AND type = ?";
 		try {
 			return jdbcTemplate.queryForObject(query, String.class, new Object[] { matchKey, "APPLICATION", type });
 		} catch (Exception e) {
