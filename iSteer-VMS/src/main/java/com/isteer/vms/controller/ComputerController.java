@@ -1,15 +1,18 @@
 package com.isteer.vms.controller;
 
+import java.util.List;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.isteer.vms.dto.ComputerPayloadDto;
+import com.isteer.vms.model.Computer;
 import com.isteer.vms.service.ComputerService;
 
 import jakarta.validation.Valid;
@@ -19,9 +22,11 @@ import jakarta.validation.Valid;
 public class ComputerController {
 	
 	private static final Logger logger = LogManager.getLogger(ComputerController.class);
-	
-	@Autowired
 	private ComputerService computerService;
+	
+	public ComputerController(ComputerService computerService) {
+		this.computerService = computerService;
+	}
 
 	@PostMapping("/computer")
 	public ResponseEntity<?> createComputer(@Valid @RequestBody ComputerPayloadDto computer){
@@ -49,5 +54,17 @@ public class ComputerController {
 			default:
 				return ResponseEntity.status(500).body("Error processing request");
 		}
+	}
+	
+	@GetMapping("/computer")
+	public ResponseEntity<List<Computer>> getAllComputers(){
+		logger.info("Received request to fetch all computers.");
+		List<Computer> computers = computerService.getAllComnputers();
+		if(computers.isEmpty()) {
+			logger.info("No computers Found.");
+			return ResponseEntity.noContent().build();
+		}
+		logger.info("Returning {} computers.", computers.size());
+		return ResponseEntity.ok(computers);
 	}
 }

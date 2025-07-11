@@ -1,12 +1,11 @@
 package com.isteer.vms.service.impl;
 
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,126 +15,119 @@ import com.isteer.vms.model.Computer;
 import com.isteer.vms.service.ApplicationService;
 import com.isteer.vms.service.ComputerService;
 
+import lombok.extern.log4j.Log4j2;
+
+@Log4j2
 @Service
 public class ComputerServiceImpl implements ComputerService {
 
-	private static final Logger logger = LogManager.getLogger(ComputerServiceImpl.class);
-	
-	@Autowired
 	private ComputerDao computerDao;
-
-	@Autowired
 	private ApplicationService applicationService;
+
+	public ComputerServiceImpl(ComputerDao computerDao, ApplicationService applicationService) {
+		super();
+		this.computerDao = computerDao;
+		this.applicationService = applicationService;
+	}
 
 	@Override
 	@Transactional
 	public int createOrUpdateComputer(ComputerPayloadDto computer) {
-		boolean isDeleted = false;
-		boolean isActive = true;
-		boolean isUpdate = true;
-		int computerStatus = 0;
-		int applicationStatus = 0;
+	    log.info("Processing computer with deviceId: {}", computer.getDeviceId());
 
-		logger.info("Processing computer with deviceId: {}", computer.getDeviceId());
-		Optional<Computer> existingComputerOpt = computerDao.getComputerByDeviceId(computer.getDeviceId());
-		Computer existingComputer = new Computer();
+	    Optional<Computer> existingOpt = computerDao.getComputerByDeviceId(computer.getDeviceId());
 
-		if (existingComputerOpt.isPresent()) {
-			existingComputer = existingComputerOpt.get();
-			logger.debug("Checking the status of existing computer with deviceId: {}", computer.getDeviceId());
-			isDeleted = existingComputerOpt.get().isDeleted();
-			isActive = existingComputerOpt.get().isActive();
-			if (!isDeleted && isActive) {
-				logger.debug("Existing computer is active and not deleted. Proceeding with update check.");
-				isUpdate = checkIfUpdateRequired(computer, existingComputer);
-				if (!isUpdate) {
-					logger.debug("Update required for computer with deviceId: {}", computer.getDeviceId());
-					existingComputer.setMachineName(computer.getMachineName());
-					existingComputer.setIpAddress(computer.getIpAddress());
-					existingComputer.setOsVersion(computer.getOsVersion());
-					existingComputer.setAntiVirusStatus(computer.getAntivirusStatus());
-					existingComputer.setFirewallStatus(computer.getFirewallStatus());
-					existingComputer.setLoggedinUser(computer.getLoggedInUser());
-					existingComputer.setLastUpdateCheck(computer.getLastUpdateCheck());
-					existingComputer.setTimestamp(computer.getTimestamp());
-					existingComputer.updatedAtNow();
+	    if (existingOpt.isPresent()) {
+	    	log.info("Found existing computer with deviceId: {}", computer.getDeviceId());
+	        Computer existing = existingOpt.get();
 
-					logger.info("Updating existing computer with deviceId: {}", computer.getDeviceId());
-					computerStatus = computerDao.createOrUpdateComputer(existingComputer);
-				}
-				logger.debug("No update required for computer with deviceId: {}", computer.getDeviceId());
-			}
-		} else {
-			logger.info("No existing computer found with deviceId: {}", computer.getDeviceId());
-			existingComputer.setUuid(UUID.randomUUID().toString());
-			existingComputer.setDeviceId(computer.getDeviceId());
-			existingComputer.setMachineName(computer.getMachineName());
-			existingComputer.setIpAddress(computer.getIpAddress());
-			existingComputer.setOsVersion(computer.getOsVersion());
-			existingComputer.setAntiVirusStatus(computer.getAntivirusStatus());
-			existingComputer.setFirewallStatus(computer.getFirewallStatus());
-			existingComputer.setLoggedinUser(computer.getLoggedInUser());
-			existingComputer.setLastUpdateCheck(computer.getLastUpdateCheck());
-			existingComputer.setTimestamp(computer.getTimestamp());
-			existingComputer.createdAtNow();
-			logger.info("Creating new computer with deviceId: {}", computer.getDeviceId());
-			computerStatus = computerDao.createOrUpdateComputer(existingComputer);
-		}
-		if (!isDeleted && isActive) {
-			logger.info("Creating or updating applications for computer with deviceId: {}", computer.getDeviceId());
-			applicationStatus = applicationService.createOrUpdateApplication(existingComputer.getUuid(),
-					computer.getInstalledSoftwares());
-		}
+	        if (existing.isDeleted()) return -1;
+	        if (!existing.isActive()) return -2;
 
-		if (isDeleted) {
-			return -1;
-		}
-		if (!isActive)
-			return -2;
-		if(applicationStatus == -1) {
-			return -3; // Error while processing application data
-		}
-		if (!isUpdate) {
-			System.out.println("Inside !isUpdate");
-			if (computerStatus == 2 && applicationStatus == 0) {
-				return 1;
-			}
-			if (computerStatus == 2 && applicationStatus > 0) {
-				return 2;
-			}
-			if (computerStatus == 0 && applicationStatus == 0) {
-				return 0;
-			}
-			if (computerStatus == 0 && applicationStatus < 0) {
-				return 3;
-			}
-		}
-		if (computerStatus == 1 && applicationStatus == 1) {
-			return 4;
-		}
-		if (computerStatus == 0 && applicationStatus == 0) {
-			return 0;
-		}
-		if (computerStatus == 0 && applicationStatus == 2) {
-			return 3;
-		}
-		return -4;
+	        if (checkIfUpdateRequired(computer, existing)) {
+	            log.debug("No update required for computer with deviceId: {}", computer.getDeviceId());
+	        } else {
+	            updateExistingComputer(existing, computer);
+	            log.info("Updating existing computer with deviceId: {}", computer.getDeviceId());
+	            int status = computerDao.createOrUpdateComputer(existing);
+	            return finalizeStatus(status, applicationService.createOrUpdateApplication(existing.getUuid(), computer.getInstalledSoftwares()), false);
+	        }
+	        return finalizeStatus(0, applicationService.createOrUpdateApplication(existing.getUuid(), computer.getInstalledSoftwares()), true);
+	    }
+
+	    Computer newComputer = buildNewComputer(computer);
+	    log.info("Creating new computer with deviceId: {}", computer.getDeviceId());
+	    int computerStatus = computerDao.createOrUpdateComputer(newComputer);
+	    int applicationStatus = applicationService.createOrUpdateApplication(newComputer.getUuid(), computer.getInstalledSoftwares());
+	    
+	    return finalizeStatus(computerStatus, applicationStatus, false);
+	}
+	
+	private void updateExistingComputer(Computer existing, ComputerPayloadDto dto) {
+	    existing.toBuilder()
+	        .machineName(dto.getMachineName())
+	        .ipAddress(dto.getIpAddress())
+	        .osVersion(dto.getOsVersion())
+	        .antiVirusStatus(dto.getAntivirusStatus())
+	        .firewallStatus(dto.getFirewallStatus())
+	        .loggedinUser(dto.getLoggedInUser())
+	        .lastUpdateCheck(dto.getLastUpdateCheck())
+	        .timestamp(dto.getTimestamp())
+	        .build();
+	    existing.updatedAtNow();
+	}
+	
+	private Computer buildNewComputer(ComputerPayloadDto dto) {
+	    return Computer.builder()
+	        .uuid(UUID.randomUUID().toString())
+	        .deviceId(dto.getDeviceId())
+	        .machineName(dto.getMachineName())
+	        .ipAddress(dto.getIpAddress())
+	        .osVersion(dto.getOsVersion())
+	        .antiVirusStatus(dto.getAntivirusStatus())
+	        .firewallStatus(dto.getFirewallStatus())
+	        .loggedinUser(dto.getLoggedInUser())
+	        .lastUpdateCheck(dto.getLastUpdateCheck())
+	        .timestamp(dto.getTimestamp())
+	        .build();
+	}
+	
+	private int finalizeStatus(int compStatus, int appStatus, boolean noUpdateRequired) {
+	    if (appStatus == -1) return -3;
+	    if (compStatus == 1 && appStatus == 1) return 4;
+	    if (compStatus == 2 && appStatus == 0 && !noUpdateRequired) return 1;
+	    if (compStatus == 2 && appStatus > 0 && !noUpdateRequired) return 2;
+	    if (compStatus == 0 && appStatus == 0) return 0;
+	    if (compStatus == 0 && appStatus < 0) return 3;
+	    if (compStatus == 0 && appStatus == 2) return 3;
+	    return -4;
 	}
 
-	private boolean checkIfUpdateRequired(ComputerPayloadDto payload, Computer existingComputer) {
-		return existingComputer.getMachineName().equals(payload.getMachineName())
-				&& existingComputer.getIpAddress().equals(payload.getIpAddress())
-				&& existingComputer.getOsVersion().equals(payload.getOsVersion())
-				&& (existingComputer.getAntiVirusStatus() == null ? payload.getAntivirusStatus() == null
-						: existingComputer.getAntiVirusStatus().equals(payload.getAntivirusStatus()))
-				&& (existingComputer.getFirewallStatus() == null ? payload.getFirewallStatus() == null
-						: existingComputer.getFirewallStatus().equals(payload.getFirewallStatus()))
-				&& (existingComputer.getLoggedinUser() == null ? payload.getLoggedInUser() == null
-						: existingComputer.getLoggedinUser().equals(payload.getLoggedInUser()))
-				&& (existingComputer.getLastUpdateCheck() == null ? payload.getLastUpdateCheck() == null
-						: existingComputer.getLastUpdateCheck().equals(payload.getLastUpdateCheck()))
-				&& (existingComputer.getTimestamp() == null ? payload.getTimestamp() == null
-						: existingComputer.getTimestamp().truncatedTo(ChronoUnit.SECONDS).equals(payload.getTimestamp().truncatedTo(ChronoUnit.SECONDS)));
+
+	private boolean checkIfUpdateRequired(ComputerPayloadDto payload, Computer existing) {
+	    return isEqual(existing.getMachineName(), payload.getMachineName())
+	        && isEqual(existing.getIpAddress(), payload.getIpAddress())
+	        && isEqual(existing.getOsVersion(), payload.getOsVersion())
+	        && isEqual(existing.getAntiVirusStatus(), payload.getAntivirusStatus())
+	        && isEqual(existing.getFirewallStatus(), payload.getFirewallStatus())
+	        && isEqual(existing.getLoggedinUser(), payload.getLoggedInUser())
+	        && isEqual(existing.getLastUpdateCheck(), payload.getLastUpdateCheck())
+	        && isTimestampEqual(existing.getTimestamp(), payload.getTimestamp());
+	}
+	
+	private boolean isEqual(Object a, Object b) {
+	    return a == null ? b == null : a.equals(b);
+	}
+
+	private boolean isTimestampEqual(LocalDateTime a, LocalDateTime b) {
+	    if (a == null || b == null) return a == b;
+	    return a.truncatedTo(ChronoUnit.SECONDS).equals(b.truncatedTo(ChronoUnit.SECONDS));
+	}
+
+	@Override
+	public List<Computer> getAllComnputers() {
+		log.info("Fetching all computers from the database.");
+		return computerDao.getAllComputers();
 	}
 
 }
