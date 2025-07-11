@@ -57,16 +57,15 @@ public class ApplicationDaoImpl implements ApplicationDao{
 	@Override
 	public int insertApplications(List<Application> applications) {
 		logger.debug("Inserting {} applications into the database", applications.size());
-	    String query = "INSERT IGNORE INTO applications (uuid, name, version, vendor_name, created_at) " +
-	                   "VALUES (:uuid, :name, :version, :vendorName, :createdAt)";
+	    String query = "INSERT IGNORE INTO applications (uuid, name, version, vendor_name) " +
+	                   "VALUES (:uuid, :name, :version, :vendorName)";
 
 	    MapSqlParameterSource[] batchParams = applications.stream()
 	        .map(app -> new MapSqlParameterSource()
 	            .addValue("uuid", UUID.randomUUID().toString())
 	            .addValue("name", app.getSoftwareName())
 	            .addValue("version", app.getSoftwareVersion())
-	            .addValue("vendorName", app.getVendorName())
-	            .addValue("createdAt", LocalDateTime.now()))
+	            .addValue("vendorName", app.getVendorName()))
 	        .toArray(MapSqlParameterSource[]::new);
 
 	   int[] status = namedParameterJdbcTemplate.batchUpdate(query, batchParams);
@@ -82,17 +81,15 @@ public class ApplicationDaoImpl implements ApplicationDao{
 	@Override
 	public int insertComputerApplications(List<ComputerApplication> computerApplications) {
 		logger.debug("Inserting {} computer applications mappings into the database", computerApplications.size());
-		String query = "INSERT IGNORE INTO computer_applications (uuid, application_uuid, computer_uuid, installed_date, is_deleted, created_at, updated_at) " +
-				"VALUES (:uuid, :applicationUuid, :computerUuid, :installedAt, :isDeleted, :createdAt, :updatedAt)";
+		String query = "INSERT IGNORE INTO computer_applications (uuid, application_uuid, computer_uuid, installed_date, is_deleted) " +
+				"VALUES (:uuid, :applicationUuid, :computerUuid, :installedAt, :isDeleted)";
 		MapSqlParameterSource[] batchParams = computerApplications.stream()
 				.map(app -> new MapSqlParameterSource()
 						.addValue("uuid", app.getUuid())
 						.addValue("applicationUuid", app.getApplicationUuid())
 						.addValue("computerUuid", app.getComputerUuid())
 						.addValue("installedAt", app.getInstalledDate())
-						.addValue("isDeleted", app.isDeleted())
-						.addValue("createdAt", app.getCreatedAt())
-						.addValue("updatedAt", app.getUpdatedAt()))
+						.addValue("isDeleted", app.isDeleted()))
 				.toArray(MapSqlParameterSource[]::new);
 		
 		int[] status = namedParameterJdbcTemplate.batchUpdate(query, batchParams);
@@ -108,12 +105,11 @@ public class ApplicationDaoImpl implements ApplicationDao{
 	@Override
 	public int deleteOrActivateComputerApplications(List<ComputerApplication> computerApplications) {
 		logger.debug("Updating {} computer applications mappings to set is_deleted in the database", computerApplications.size());
-		String query = "UPDATE computer_applications SET is_deleted = :isDeleted, updated_at = :updatedAt WHERE uuid = :uuid";
+		String query = "UPDATE computer_applications SET is_deleted = :isDeleted WHERE uuid = :uuid";
 		MapSqlParameterSource[] batchParams = computerApplications.stream()
 				.map(app -> new MapSqlParameterSource()
 						.addValue("uuid", app.getUuid())
-						.addValue("isDeleted", app.isDeleted())
-						.addValue("updatedAt", app.getUpdatedAt()))
+						.addValue("isDeleted", app.isDeleted()))
 				.toArray(MapSqlParameterSource[]::new);
 		int[] status = namedParameterJdbcTemplate.batchUpdate(query, batchParams);
 		for (int i : status) {

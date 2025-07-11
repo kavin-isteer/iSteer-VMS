@@ -1,15 +1,12 @@
 package com.isteer.vms.service.impl;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,175 +17,166 @@ import com.isteer.vms.model.ComputerApplication;
 import com.isteer.vms.service.ApplicationService;
 import com.isteer.vms.service.VulnerabilityService;
 
+import lombok.extern.log4j.Log4j2;
+
+@Log4j2
 @Service
 public class ApplicationServiceImpl implements ApplicationService {
 
-	private static final Logger logger = LogManager.getLogger(ApplicationServiceImpl.class);
+	private final ApplicationDao applicationDao;
+	private final VulnerabilityService vulnerabilityService;
 
-	@Autowired
-	private ApplicationDao applicationDao;
-	
-	@Autowired
-	private VulnerabilityService vulnerabilityService;
+	public ApplicationServiceImpl(ApplicationDao applicationDao, VulnerabilityService vulnerabilityService) {
+		this.applicationDao = applicationDao;
+		this.vulnerabilityService = vulnerabilityService;
+	}
 
 	@Override
 	@Transactional
 	public int createOrUpdateApplication(String computerUuid, List<SoftwarePayloadDto> software) {
-		logger.info("Processing applications for computer UUID: {}", computerUuid);
-		List<Application> existingApplications = applicationDao.getAllApplications();
-		logger.debug("Found {} existing applications in the database", existingApplications.size());
-		List<ComputerApplication> existingComputerApplications = applicationDao
-				.getApplicationsByComputerUuid(computerUuid);
-		logger.debug("Found {} existing computer applications mapped to computer UUID: {}",
-				existingComputerApplications.size(), computerUuid);
+		log.info("Processing applications for computer UUID: {}", computerUuid);
 
-		int mappingStatus = 0;
-		int deletedStatus = 0;
-		int activatedStatus = 0;
+		List<Application> existingApps = applicationDao.getAllApplications();
+		List<ComputerApplication> existingCompApps = applicationDao.getApplicationsByComputerUuid(computerUuid);
 
-		Set<String> existingApplicationKeys = existingApplications.stream()
-				.map(app -> key(app.getSoftwareName(), app.getSoftwareVersion(), app.getVendorName()))
-				.collect(Collectors.toSet());
+		Set<String> appKeys = toKeySet(existingApps);
+		Set<String> compAppKeys = toKeySetFromCompApps(existingCompApps);
 
-		Set<String> existingComputerApplicationKeys = existingComputerApplications.stream()
-				.map(app -> key(app.getSoftwareName(), app.getSoftwareVersion(), app.getVendorName()))
-				.collect(Collectors.toSet());
-
-		List<SoftwarePayloadDto> newSoftware = software.stream()
-				.filter(s -> !existingApplicationKeys
-						.contains(key(s.getSoftwareName(), s.getSoftwareVersion(), s.getVendorName())))
-				.collect(Collectors.toList());
-		logger.info("Identified {} new software applications to be added", newSoftware.size());
-
+		List<SoftwarePayloadDto> newSoftware = findNewSoftware(software, appKeys);
 		if (!newSoftware.isEmpty()) {
-			logger.debug("Creating new applications for the software payloads");
-			List<Application> insertedApplications = createNewApplications(newSoftware);
-			if (insertedApplications.isEmpty() || insertedApplications == null) {
-				return -1; // Indicate failure to insert new applications
-			}
-			existingApplications = applicationDao.getAllApplications();
-			logger.debug("Fetched {} applications after insertion", existingApplications.size());
-			existingApplicationKeys.addAll(insertedApplications.stream()
-					.map(app -> key(app.getSoftwareName(), app.getSoftwareVersion(), app.getVendorName()))
-					.collect(Collectors.toSet()));
+			List<Application> inserted = createNewApplications(newSoftware);
+			if (inserted == null || inserted.isEmpty())
+				return -1;
+			existingApps = applicationDao.getAllApplications(); // refresh
+			appKeys.addAll(toKeySet(inserted));
 		}
 
-		List<ComputerApplication> computerApplicationsToDelete = existingComputerApplications.stream()
-				.filter(ca -> !ca.isDeleted() && software.stream()
-						.noneMatch(s -> key(s.getSoftwareName(), s.getSoftwareVersion(), s.getVendorName())
-								.equals(key(ca.getSoftwareName(), ca.getSoftwareVersion(), ca.getVendorName()))))
-				.collect(Collectors.toList());
-		logger.info("Identified {} computer applications mapping to be deleted", computerApplicationsToDelete.size());
+		int deleted = handleDeletedApplications(software, existingCompApps);
+		int activated = handleActivatedApplications(software, existingCompApps);
+		int mapped = handleNewMappings(computerUuid, software, existingApps, appKeys, compAppKeys);
 
-		if (!computerApplicationsToDelete.isEmpty()) {
-			computerApplicationsToDelete.forEach(ca -> {
-				ca.setDeleted(true);
-				ca.setUpdatedAt(LocalDateTime.now());
-			});
-			logger.debug("Deleting computer applications that are no longer present in the software payloads");
-			deletedStatus = applicationDao.deleteOrActivateComputerApplications(computerApplicationsToDelete);
-			
-		}
+		return determineFinalStatus(mapped, deleted, activated);
+	}
 
-		List<ComputerApplication> computerApplicationsToActivate = existingComputerApplications.stream()
-				.filter(ca -> ca.isDeleted() && software.stream()
-						.anyMatch(s -> key(s.getSoftwareName(), s.getSoftwareVersion(), s.getVendorName())
-								.equals(key(ca.getSoftwareName(), ca.getSoftwareVersion(), ca.getVendorName()))))
-				.collect(Collectors.toList());
-		logger.info("Identified {} computer applications mapping to be activated", computerApplicationsToActivate.size());
+	private Set<String> toKeySet(List<? extends Application> apps) {
+		return apps.stream().map(app -> key(app.getSoftwareName(), app.getSoftwareVersion(), app.getVendorName()))
+				.collect(Collectors.toSet());
+	}
 
-		if (!computerApplicationsToActivate.isEmpty()) {
-			computerApplicationsToActivate.forEach(ca -> {
-				ca.setDeleted(false);
-				ca.setUpdatedAt(LocalDateTime.now());
-			});
-			logger.debug("Activating computer applications that were previously deleted");
-			activatedStatus = applicationDao.deleteOrActivateComputerApplications(computerApplicationsToActivate);
-		}
-		List<String> newApplicationKeys = software.stream()
-				.map(s -> key(s.getSoftwareName(), s.getSoftwareVersion(), s.getVendorName()))
-				.filter(appKey -> !existingComputerApplicationKeys.contains(appKey)
-						&& existingApplicationKeys.contains(appKey))
-				.collect(Collectors.toList());
-		logger.info("Identified {} new computer applications to be mapped", newApplicationKeys.size());
+	private Set<String> toKeySetFromCompApps(List<ComputerApplication> compApps) {
+		return compApps.stream().map(this::key).collect(Collectors.toSet());
+	}
 
-		List<Application> newComputerApplications = existingApplications.stream()
-				.filter(app -> newApplicationKeys
-						.contains(key(app.getSoftwareName(), app.getSoftwareVersion(), app.getVendorName())))
-				.collect(Collectors.toList());
-		logger.debug("Mapping {} new applications to computer UUID: {}", newComputerApplications.size(), computerUuid);
+	private List<SoftwarePayloadDto> findNewSoftware(List<SoftwarePayloadDto> software, Set<String> existingKeys) {
+		return software.stream().filter(s -> !existingKeys.contains(key(s))).toList();
+	}
 
-		if (!newComputerApplications.isEmpty()) {
-			List<ComputerApplication> computerApplications = mapApplicationsToComputer(computerUuid,
-					newComputerApplications);
-			computerApplications.forEach(a -> {
-				String aKey = key(a.getSoftwareName(), a.getSoftwareVersion(), a.getVendorName());
-				software.stream()
-						.filter(s -> key(s.getSoftwareName(), s.getSoftwareVersion(), s.getVendorName()).equals(aKey))
-						.findFirst().ifPresent(s -> {
-							a.setInstalledDate(s.getInstalledDate());
-						});
-			});
-			logger.debug("Inserting computer applications mappings for computer UUID: {}", computerUuid);
-			mappingStatus = applicationDao.insertComputerApplications(computerApplications);
-		}
+	private int handleDeletedApplications(List<SoftwarePayloadDto> software, List<ComputerApplication> existingCompApps) {
+	    List<ComputerApplication> toDelete = existingCompApps.stream()
+	        .filter(ca -> !ca.isDeleted() && software.stream().noneMatch(s -> key(s).equals(key(ca))))
+	        .map(ca -> {
+	            ca.setDeleted(true);
+	            return ca;
+	        })
+	        .toList();
 
-		if (mappingStatus == 0 && deletedStatus == 0 && activatedStatus == 0) {
-			return 0; // Indicate failure to create or update applications
-		}
-		if (mappingStatus == 1 && deletedStatus == 0 && activatedStatus == 0) {
-			return 1; // Indicate successful creation of new applications
-		}
-		if (mappingStatus == 1 || deletedStatus == 1 || activatedStatus == 1) {
-			return 2; // Indicate successful update of existing applications
-		}
+	    if (toDelete.isEmpty()) return 0;
+
+	    log.info("Deleting {} stale computer application mappings", toDelete.size());
+	    return applicationDao.deleteOrActivateComputerApplications(toDelete);
+	}
+
+
+	private int handleActivatedApplications(List<SoftwarePayloadDto> software, List<ComputerApplication> existingCompApps) {
+	    
+	    List<ComputerApplication> toActivate = existingCompApps.stream()
+	        .filter(ComputerApplication::isDeleted)
+	        .filter(ca -> software.stream().anyMatch(s -> key(s).equals(key(ca))))
+	        .map(ca -> {
+	            ca.setDeleted(false);
+	            return ca;
+	        })
+	        .toList();
+
+	    if (toActivate.isEmpty()) return 0;
+
+	    log.info("Reactivating {} application mappings", toActivate.size());
+	    return applicationDao.deleteOrActivateComputerApplications(toActivate);
+	}
+
+
+	private int handleNewMappings(String computerUuid, List<SoftwarePayloadDto> software,
+			List<Application> existingApps, Set<String> appKeys, Set<String> compAppKeys) {
+		List<String> newKeys = software.stream().map(this::key)
+				.filter(k -> !compAppKeys.contains(k) && appKeys.contains(k)).toList();
+
+		if (newKeys.isEmpty())
+			return 0;
+
+		List<Application> newMappings = existingApps.stream().filter(app -> newKeys.contains(key(app)))
+				.toList();
+
+		List<ComputerApplication> computerApplications = mapApplicationsToComputer(computerUuid, newMappings);
+		mergeInstalledDates(computerApplications, software);
+		return applicationDao.insertComputerApplications(computerApplications);
+	}
+
+	private void mergeInstalledDates(List<ComputerApplication> mappedApps, List<SoftwarePayloadDto> software) {
+		mappedApps.forEach(app -> software.stream().filter(s -> key(s).equals(key(app))).findFirst()
+				.ifPresent(s -> app.setInstalledDate(s.getInstalledDate())));
+	}
+
+	private int determineFinalStatus(int mapped, int deleted, int activated) {
+		if (mapped == 0 && deleted == 0 && activated == 0)
+			return 0;
+		if (mapped == 1 && deleted == 0 && activated == 0)
+			return 1;
+		if (mapped == 1 || deleted == 1 || activated == 1)
+			return 2;
 		return -1;
+	}
 
+	private String key(String name, String version, String vendor) {
+		return name + "|" + version + "|" + vendor;
+	}
+
+	private String key(SoftwarePayloadDto dto) {
+		return key(dto.getSoftwareName(), dto.getSoftwareVersion(), dto.getVendorName());
+	}
+
+	private String key(Application app) {
+		return key(app.getSoftwareName(), app.getSoftwareVersion(), app.getVendorName());
+	}
+
+	private String key(ComputerApplication app) {
+		return key(app.getSoftwareName(), app.getSoftwareVersion(), app.getVendorName());
 	}
 
 	private List<Application> createNewApplications(List<SoftwarePayloadDto> newSoftware) {
-		List<Application> applications = new ArrayList<>();
-		for (SoftwarePayloadDto software : newSoftware) {
-			Application application = new Application();
-			application.setUuid(UUID.randomUUID().toString());
-			application.setSoftwareName(software.getSoftwareName());
-			application.setSoftwareVersion(software.getSoftwareVersion());
-			application.setVendorName(software.getVendorName());
-			application.setCreatedAt(LocalDateTime.now());
-			applications.add(application);
-		}
-		logger.debug("Creating {} new applications in the database", applications.size());
+		List<Application> applications = newSoftware.stream()
+				.map(s -> Application.builder().uuid(UUID.randomUUID().toString()).softwareName(s.getSoftwareName())
+						.softwareVersion(s.getSoftwareVersion()).vendorName(s.getVendorName()).build())
+				.toList();
+
+		log.debug("Creating {} new applications in the database", applications.size());
 		int status = applicationDao.insertApplications(applications);
+
 		if (status == 0) {
-//			throw new RuntimeException("Failed to insert new applications");
-			logger.error("Failed to insert new applications into the database");
-			return null;
+			log.error("Failed to insert new applications into the database");
+			return Collections.emptyList();
 		}
-		logger.info("Successfully inserted {} new applications into the database", applications.size());
+
+		log.info("Successfully inserted {} new applications", applications.size());
 		vulnerabilityService.analyzeAndSaveApplicationVulnerabilitiesAsync(applications);
 		return applications;
-
 	}
 
 	private List<ComputerApplication> mapApplicationsToComputer(String computerUuid, List<Application> applications) {
-		LocalDateTime now = LocalDateTime.now();
-
-		return applications.stream().map(app -> {
-			ComputerApplication ca = new ComputerApplication();
-			ca.setUuid(UUID.randomUUID().toString());
-			ca.setComputerUuid(computerUuid);
-			ca.setApplicationUuid(app.getUuid());
-			ca.setSoftwareName(app.getSoftwareName());
-			ca.setSoftwareVersion(app.getSoftwareVersion());
-			ca.setVendorName(app.getVendorName());
-			ca.setCreatedAt(now);
-			ca.setDeleted(false);
-			return ca;
-		}).collect(Collectors.toList());
+		return applications.stream()
+				.map(app -> ComputerApplication.builder().uuid(UUID.randomUUID().toString()).computerUuid(computerUuid)
+						.applicationUuid(app.getUuid()).softwareName(app.getSoftwareName())
+						.softwareVersion(app.getSoftwareVersion()).vendorName(app.getVendorName())
+						.isDeleted(false).build())
+				.toList();
 	}
-
-	private String key(String softwareName, String softwareVersion, String vendorName) {
-		return softwareName + "|" + softwareVersion + "|" + vendorName;
-	}
-
 }

@@ -55,8 +55,8 @@ public class ComputerDaoImpl implements ComputerDao{
 	@Override
 	public int createOrUpdateComputer(Computer computer) {
 		logger.debug("Creating or updating computer with deviceId: {}", computer.getDeviceId());
-		String query = "INSERT INTO computers (uuid, device_id, hostname, ip_address, os_version, antivirus_status, firewall_status, logged_in_user, last_update_check, timestamp, is_deleted, is_active, created_at, updated_at) " +
-				"VALUES (:uuid, :deviceId, :machineName, :ipAddress, :osVersion, :antivirusStatus, :firewallStatus, :loggedInUser, :lastUpdateCheck, :timestamp, :isDeleted, :isActive, :createdAt, :updatedAt) " +
+		String query = "INSERT INTO computers (uuid, device_id, hostname, ip_address, os_version, antivirus_status, firewall_status, logged_in_user, last_update_check, timestamp, is_deleted, is_active) " +
+				"VALUES (:uuid, :deviceId, :machineName, :ipAddress, :osVersion, :antivirusStatus, :firewallStatus, :loggedInUser, :lastUpdateCheck, :timestamp, :isDeleted, :isActive) " +
 				"ON DUPLICATE KEY UPDATE " +
 				"hostname = :machineName, " +
 				"ip_address = :ipAddress, " +
@@ -67,8 +67,7 @@ public class ComputerDaoImpl implements ComputerDao{
 				"last_update_check = :lastUpdateCheck, " +
 				"timestamp = :timestamp, " +
 				"is_deleted = :isDeleted, " +
-				"is_active = :isActive, " +
-				"updated_at = :updatedAt";
+				"is_active = :isActive ";
 		MapSqlParameterSource params = new MapSqlParameterSource();
 		params.addValue("uuid", computer.getUuid());
 		params.addValue("deviceId", computer.getDeviceId());
@@ -82,8 +81,6 @@ public class ComputerDaoImpl implements ComputerDao{
 		params.addValue("timestamp", computer.getTimestamp());
 		params.addValue("isDeleted", computer.isDeleted());
 		params.addValue("isActive", computer.isActive());
-		params.addValue("createdAt", computer.getCreatedAt());
-		params.addValue("updatedAt", computer.getUpdatedAt());
 		return namedParameterJdbcTemplate.update(query, params);
 	}
 
