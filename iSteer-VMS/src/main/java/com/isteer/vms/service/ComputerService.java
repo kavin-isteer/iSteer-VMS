@@ -3,6 +3,7 @@ package com.isteer.vms.service;
 import java.util.List;
 
 import com.isteer.vms.dto.ComputerPayloadDto;
+import com.isteer.vms.dto.DashboardMetricsDto;
 import com.isteer.vms.model.Computer;
 
 public interface ComputerService {
@@ -39,10 +40,13 @@ public interface ComputerService {
 
 	/**
 	 * Retrieves a list of all computers.
+	 * @param status 
 	 * 
 	 * @return A list of {@link Computer} objects representing all computers in the system.
 	 * 
 	 */
-	List<Computer> getAllComnputers();
+	List<Computer> getAllComnputers(String status);
+
+	DashboardMetricsDto getDashboardMetrics();
 
 }

@@ -15,9 +15,11 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.springframework.stereotype.Service;
 
 import com.isteer.vms.core.engine.model.CpeEntry;
 
+@Service
 public class LuceneCpeIndexer {
 	 private static final String INDEX_DIR = "lucene-index";
 	    private IndexWriter indexWriter;

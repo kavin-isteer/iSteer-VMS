@@ -7,10 +7,12 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import com.isteer.vms.core.engine.dao.CPEEntriesDao;
 import com.isteer.vms.core.engine.model.CpeEntry;
 
+@Service
 public class LuceneIndexRunner {
 	@Autowired
 	CPEEntriesDao cpeEntriesDao;
