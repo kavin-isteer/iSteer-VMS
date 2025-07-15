@@ -25,9 +25,11 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.springframework.stereotype.Service;
 
 import com.isteer.vms.core.engine.model.CpeEntry;
 
+@Service
 public class LuceneCpeSearcher {
 	private static final Logger logger = LogManager.getLogger(LuceneCpeSearcher.class);
 	private static final String INDEX_DIR = "lucene-index";
