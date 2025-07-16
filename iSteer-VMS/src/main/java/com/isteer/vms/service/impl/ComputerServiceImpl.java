@@ -2,7 +2,9 @@ package com.isteer.vms.service.impl;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -10,7 +12,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.isteer.vms.dao.ComputerDao;
+import com.isteer.vms.dao.VulnerabilityDao;
 import com.isteer.vms.dto.ComputerPayloadDto;
+import com.isteer.vms.dto.ComputerResponseDto;
+import com.isteer.vms.dto.DashboardMetricsDto;
 import com.isteer.vms.model.Computer;
 import com.isteer.vms.service.ApplicationService;
 import com.isteer.vms.service.ComputerService;
@@ -23,11 +28,13 @@ public class ComputerServiceImpl implements ComputerService {
 
 	private ComputerDao computerDao;
 	private ApplicationService applicationService;
+	private VulnerabilityDao vulnerabilityDao;
 
-	public ComputerServiceImpl(ComputerDao computerDao, ApplicationService applicationService) {
+	public ComputerServiceImpl(ComputerDao computerDao, ApplicationService applicationService, VulnerabilityDao vulnerabilityDao) {
 		super();
 		this.computerDao = computerDao;
 		this.applicationService = applicationService;
+		this.vulnerabilityDao = vulnerabilityDao;
 	}
 
 	@Override
@@ -125,9 +132,74 @@ public class ComputerServiceImpl implements ComputerService {
 	}
 
 	@Override
-	public List<Computer> getAllComnputers() {
+	public List<Computer> getAllComnputers(String status) {
+		if(status != null && !status.isEmpty()) {
+			log.info("Fetching all computers from the database with active status {}", status);
+			return computerDao.getAllComputers(status);
+		}
 		log.info("Fetching all computers from the database.");
 		return computerDao.getAllComputers();
 	}
+
+	@Override
+	public DashboardMetricsDto getDashboardMetrics() {
+		log.info("Loading Dashboard Metrics");
+		return DashboardMetricsDto.builder()
+				.totalComputers(computerDao.getTotalComputersCount())
+				.vulnerableComputers(computerDao.getVulnerableComputersCount())
+				.computerDetails(getComputerDetails())
+				.build();
+	}
+
+//	private List<ComputerResponseDto> getComputerDetails() {
+//		return computerDao.getAllComputers().stream()
+//				.map(computer -> ComputerResponseDto.builder()
+//						.uuid(computer.getUuid())
+//						.deviceId(computer.getDeviceId())
+//						.machineName(computer.getMachineName())
+//						.ipAddress(computer.getIpAddress())
+//						.osVersion(computer.getOsVersion())
+//						.antivirusStatus(computer.getAntiVirusStatus())
+//						.firewallStatus(computer.getFirewallStatus())
+//						.loggedInUser(computer.getLoggedinUser())
+//						.criticalVulnerabilityCount(0)
+//						.highVulnerabilityCount(0)
+//						.mediumVulnerabilityCount(0)
+//						.lowVulnerabilityCount(0)
+//						.applicationDetails(applicationService.getApplicationDetails(computer.getUuid()))
+//						.build()).toList();
+//	}
+	
+	private List<ComputerResponseDto> getComputerDetails() {
+	    Map<String, Map<String, Integer>> vulnerabilityCounts = 
+	        vulnerabilityDao.getVulnerabilityCountsByComputer();
+	    Map<String, Integer> installedAppCounts = computerDao.getInstalledAppCounts();
+	    Map<String, Integer> vulnerableAppCounts = computerDao.getVulnerableAppCounts(); 
+
+	    return computerDao.getAllComputers().stream()
+	            .map(computer -> {
+	                Map<String, Integer> severityCountMap = 
+	                    vulnerabilityCounts.getOrDefault(computer.getUuid(), Collections.emptyMap());
+
+	                return ComputerResponseDto.builder()
+	                        .uuid(computer.getUuid())
+	                        .deviceId(computer.getDeviceId())
+	                        .machineName(computer.getMachineName())
+	                        .ipAddress(computer.getIpAddress())
+	                        .osVersion(computer.getOsVersion())
+	                        .antivirusStatus(computer.getAntiVirusStatus())
+	                        .firewallStatus(computer.getFirewallStatus())
+	                        .loggedInUser(computer.getLoggedinUser())
+	                        .installedSoftwareCount(installedAppCounts.getOrDefault(computer.getUuid(), 0))
+	                        .vulnerableSoftwareCount(vulnerableAppCounts.getOrDefault(computer.getUuid(), 0))
+	                        .criticalVulnerabilityCount(severityCountMap.getOrDefault("CRITICAL", 0))
+	                        .highVulnerabilityCount(severityCountMap.getOrDefault("HIGH", 0))
+	                        .mediumVulnerabilityCount(severityCountMap.getOrDefault("MEDIUM", 0))
+	                        .lowVulnerabilityCount(severityCountMap.getOrDefault("LOW", 0))
+	                        .applicationDetails(applicationService.getApplicationDetails(computer.getUuid()))
+	                        .build();
+	            }).toList();
+	}
+
 
 }

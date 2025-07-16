@@ -1,8 +1,8 @@
 package com.isteer.vms.service.impl;
 
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.isteer.vms.dao.ApplicationDao;
+import com.isteer.vms.dao.VulnerabilityDao;
+import com.isteer.vms.dto.ApplicationResponseDto;
 import com.isteer.vms.dto.SoftwarePayloadDto;
 import com.isteer.vms.model.Application;
 import com.isteer.vms.model.ComputerApplication;
@@ -25,10 +27,12 @@ public class ApplicationServiceImpl implements ApplicationService {
 
 	private final ApplicationDao applicationDao;
 	private final VulnerabilityService vulnerabilityService;
+	private final VulnerabilityDao vulnerabilityDao;
 
-	public ApplicationServiceImpl(ApplicationDao applicationDao, VulnerabilityService vulnerabilityService) {
+	public ApplicationServiceImpl(ApplicationDao applicationDao, VulnerabilityService vulnerabilityService, VulnerabilityDao vulnerabilityDao) {
 		this.applicationDao = applicationDao;
 		this.vulnerabilityService = vulnerabilityService;
+		this.vulnerabilityDao = vulnerabilityDao;
 	}
 
 	@Override
@@ -167,6 +171,7 @@ public class ApplicationServiceImpl implements ApplicationService {
 		}
 
 		log.info("Successfully inserted {} new applications", applications.size());
+		log.error("Applications to be analyzed: {}", applications);
 		vulnerabilityService.analyzeAndSaveApplicationVulnerabilitiesAsync(applications);
 		return applications;
 	}
@@ -178,5 +183,39 @@ public class ApplicationServiceImpl implements ApplicationService {
 						.softwareVersion(app.getSoftwareVersion()).vendorName(app.getVendorName())
 						.isDeleted(false).build())
 				.toList();
+	}
+
+	@Override
+	public List<Application> getAllApplications(String isVulnerable) {
+		if(isVulnerable != null && !isVulnerable.isEmpty()) {
+			return applicationDao.getAllApplications(isVulnerable);
+		}
+		return applicationDao.getAllApplications();
+		
+	}
+
+	@Override
+	public List<ApplicationResponseDto> getApplicationDetails(String computerUuid) {
+		
+		Map<String, Map<String, Integer>> vulnerabilityCounts = vulnerabilityDao.getVulnerabilityCountsByApplication();
+		
+		return applicationDao.getApplicationsByComputerUuid(computerUuid).stream()
+				.map(app -> {
+					Map<String, Integer> severityCountMap = 
+							vulnerabilityCounts.getOrDefault(app.getApplicationUuid(), Collections.emptyMap());
+					
+					return ApplicationResponseDto.builder()
+							.uuid(app.getApplicationUuid())
+							.softwareName(app.getSoftwareName())
+							.vendor(app.getVendorName())
+							.softwareVersion(app.getSoftwareVersion())
+							.criticalVulnerabilityCount(severityCountMap.getOrDefault("CRITICAL", 0))
+							.highVulnerabilityCount(severityCountMap.getOrDefault("HIGH", 0))
+							.mediumVulnerabilityCount(severityCountMap.getOrDefault("MEDIUM", 0))
+							.lowVulnerabilityCount(severityCountMap.getOrDefault("LOW", 0))
+							.vulnerabilities(vulnerabilityDao.getVulnerabilitiesByApplicationUuid(app.getApplicationUuid()))
+							.build();
+				}).toList();
+		
 	}
 }

@@ -9,28 +9,31 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.isteer.vms.dto.ComputerPayloadDto;
+import com.isteer.vms.dto.DashboardMetricsDto;
 import com.isteer.vms.model.Computer;
 import com.isteer.vms.service.ComputerService;
 
 import jakarta.validation.Valid;
+import lombok.extern.log4j.Log4j2;
 
 @RestController
+@Log4j2
 @RequestMapping("/api")
 public class ComputerController {
 	
-	private static final Logger logger = LogManager.getLogger(ComputerController.class);
 	private ComputerService computerService;
 	
 	public ComputerController(ComputerService computerService) {
 		this.computerService = computerService;
 	}
 
-	@PostMapping("/computer")
+	@PostMapping("/computers")
 	public ResponseEntity<?> createComputer(@Valid @RequestBody ComputerPayloadDto computer){
-		logger.info("Received request to create or update computer with deviceId: {}", computer.getDeviceId());
+		log.info("Received request to create or update computer with deviceId: {}", computer.getDeviceId());
 		int status = computerService.createOrUpdateComputer(computer);
 		switch(status) {
 			case 0:
@@ -57,14 +60,27 @@ public class ComputerController {
 	}
 	
 	@GetMapping("/computer")
-	public ResponseEntity<List<Computer>> getAllComputers(){
-		logger.info("Received request to fetch all computers.");
-		List<Computer> computers = computerService.getAllComnputers();
+	public ResponseEntity<List<Computer>> getAllComputers(@RequestParam(required = false) String status){
+		log.info("Received request to fetch all computers.");
+		List<Computer> computers = computerService.getAllComnputers(status);
 		if(computers.isEmpty()) {
-			logger.info("No computers Found.");
+			log.info("No computers Found.");
 			return ResponseEntity.noContent().build();
 		}
-		logger.info("Returning {} computers.", computers.size());
+		log.info("Returning {} computers.", computers.size());
 		return ResponseEntity.ok(computers);
+	}
+	
+	@GetMapping("/getDashboardMetrics")
+	public ResponseEntity<DashboardMetricsDto> getMetrics() {
+		log.info("Received request to fetch dashboard metrics.");
+		DashboardMetricsDto metrics = computerService.getDashboardMetrics();
+		if(metrics == null) {
+			log.info("No metrics found.");
+			return ResponseEntity.noContent().build();
+		} else {
+			log.info("Returning dashboard metrics");
+			return ResponseEntity.ok(metrics);
+		}
 	}
 }
