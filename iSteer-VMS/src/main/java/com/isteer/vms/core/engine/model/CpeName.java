@@ -1,6 +1,6 @@
 package com.isteer.vms.core.engine.model;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 
 import com.isteer.vms.core.engine.enums.CpeField;
@@ -13,7 +13,7 @@ public class CpeName {
 	private String version;
 	private String update="*";
 	private boolean isValidCpe;
-	private Map<CpeField,ResolveMethod> resolveMethod=new HashMap<>();
+	private Map<CpeField,ResolveMethod> resolveMethod=new EnumMap<>(CpeField.class);
 
 	public String getVendor() {
 		return vendor;

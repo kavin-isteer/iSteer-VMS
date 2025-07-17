@@ -8,7 +8,15 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import lombok.Builder;
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
+@Data
+@Getter
+@Setter
+@Builder(toBuilder = true)
 public class ComputerPayloadDto {
 
 	@NotBlank(message = "Device ID cannot be blank")
@@ -18,7 +26,7 @@ public class ComputerPayloadDto {
 	private String machineName;
 	
 	@Pattern(
-		    regexp = "^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])$",
+		    regexp = "^((25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)\\.){3}(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)$",
 		    message = "Invalid IP address format"
 		)
 		@NotBlank(message = "IP address cannot be blank")

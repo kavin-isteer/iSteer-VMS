@@ -10,22 +10,25 @@ import com.isteer.vms.core.engine.model.CpeEntry;
 import com.isteer.vms.core.engine.model.CpeName;
 
 import lombok.extern.log4j.Log4j2;
+
 @Log4j2
 @Service
 public class FuzzySearchTool {
 	LuceneCpeSearcher luceneSearcher;
 
 	public FuzzySearchTool(LuceneCpeSearcher luceneSearcher) {
-		this.luceneSearcher=luceneSearcher;
+		this.luceneSearcher = luceneSearcher;
 	}
-	
-	public List<CpeName> searchForLikelyCpeName(String vendorSearchString, String productSearchString, String versionSearchString) {
+
+	public List<CpeName> searchForLikelyCpeName(String vendorSearchString, String productSearchString,
+			String versionSearchString) {
 		List<CpeEntry> filteredCpes = new ArrayList<>();
 		List<CpeName> likelyCpeNames = new ArrayList<>();
 		try {
-			filteredCpes = luceneSearcher.multiFieldSearch(vendorSearchString, productSearchString, versionSearchString);
-			log.info("Found likely cpes: {}",filteredCpes.size());
-		}catch (Exception e) {
+			filteredCpes = luceneSearcher.multiFieldSearch(vendorSearchString, productSearchString,
+					versionSearchString);
+			log.info("Found likely cpes: {}", filteredCpes.size());
+		} catch (Exception e) {
 			log.debug(e.getMessage());
 			log.debug("Exception occured while searching for likely cpes !!");
 		}

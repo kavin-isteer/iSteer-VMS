@@ -2,8 +2,6 @@ package com.isteer.vms.controller;
 
 import java.util.List;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,6 +33,7 @@ public class ComputerController {
 	public ResponseEntity<?> createComputer(@Valid @RequestBody ComputerPayloadDto computer){
 		log.info("Received request to create or update computer with deviceId: {}", computer.getDeviceId());
 		int status = computerService.createOrUpdateComputer(computer);
+		System.out.println("Status code: " + status);
 		switch(status) {
 			case 0:
 				return ResponseEntity.ok("No changes made to the computer");

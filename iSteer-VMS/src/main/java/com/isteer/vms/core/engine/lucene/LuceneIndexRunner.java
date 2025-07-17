@@ -4,27 +4,27 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.isteer.vms.core.engine.dao.CPEEntriesDao;
 import com.isteer.vms.core.engine.model.CpeEntry;
 
+import lombok.extern.log4j.Log4j2;
+
 @Service
+@Log4j2
 public class LuceneIndexRunner {
-	@Autowired
-	CPEEntriesDao cpeEntriesDao;
+
+	private CPEEntriesDao cpeEntriesDao;
 	
-	private static final Logger logger = LogManager.getLogger(LuceneIndexRunner.class);
+	public LuceneIndexRunner(CPEEntriesDao cpeEntriesDao) {
+		super();
+		this.cpeEntriesDao = cpeEntriesDao;
+	}
 
 	public void createIndexFromCvssDb() throws IOException, SQLException {
-		// File indexDir = new File("lucene-index");
-		// boolean indexExists = indexDir.exists() && indexDir.isDirectory() &&
-		// indexDir.list().length > 0;
-
-		logger.info("Fetching CPE entries from DB and indexing to lucene index...");
+		
+		log.info("Fetching CPE entries from DB and indexing to lucene index...");
 
 		// indexer
 		LuceneCpeIndexer indexer = new LuceneCpeIndexer();
@@ -40,11 +40,11 @@ public class LuceneIndexRunner {
 
 			indexer.indexBatch(batch);
 			totalIndexed += batch.size();
-			logger.info("Indexed batch of " + batch.size() + " records. Total: " + totalIndexed);
+			log.info("Indexed batch of " + batch.size() + " records. Total: " + totalIndexed);
 
 			offset += limit;
 		}
 		indexer.close(); // close once at the end
-		logger.info("Indexing complete. Total records indexed: " + totalIndexed);
+		log.info("Indexing complete. Total records indexed: " + totalIndexed);
 	}
 }
