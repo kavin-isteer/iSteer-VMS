@@ -16,7 +16,7 @@ public class BaseApplication {
 	private List<CpeName> likelyCPEs=new ArrayList<>();
 	
 	public BaseApplication() {
-		// TODO Auto-generated constructor stub
+		//Default constructor
 	}
 	public BaseApplication(Application application) {
 		this.application=application;

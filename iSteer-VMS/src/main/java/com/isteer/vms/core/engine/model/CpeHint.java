@@ -7,8 +7,8 @@ import com.isteer.vms.core.engine.enums.HintAddedBy;
 public class CpeHint {
 	private Integer id;
 	private String type;
-	private String match_key;
-	private String standardized_name;
+	private String matchKey;
+	private String standardizedName;
 	private String confidence;
 	private String description;
 	private LocalDateTime createdAt;
@@ -27,17 +27,17 @@ public class CpeHint {
 	public void setType(String type) {
 		this.type = type;
 	}
-	public String getMatch_key() {
-		return match_key;
+	public String getMatchKey() {
+		return matchKey;
 	}
-	public void setMatch_key(String match_key) {
-		this.match_key = match_key;
+	public void setMatchKey(String matchKey) {
+		this.matchKey = matchKey;
 	}
-	public String getStandardized_name() {
-		return standardized_name;
+	public String getStandardizedName() {
+		return standardizedName;
 	}
-	public void setStandardized_name(String standardized_name) {
-		this.standardized_name = standardized_name;
+	public void setStandardizedName(String standardizedName) {
+		this.standardizedName = standardizedName;
 	}
 	public String getConfidence() {
 		return confidence;

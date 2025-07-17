@@ -16,13 +16,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.springframework.stereotype.Service;
@@ -31,388 +25,270 @@ import com.isteer.vms.core.engine.model.CpeEntry;
 
 @Service
 public class LuceneCpeSearcher {
-	private static final Logger logger = LogManager.getLogger(LuceneCpeSearcher.class);
-	private static final String INDEX_DIR = "lucene-index";
-	private int EDIT_DISTANCE = 10; // Default edit distance
-	private int TOP_MATCHES_THRESHOLD = 10; // Default match threshold
 
-	public LuceneCpeSearcher withEditDistance(int editDistance) {
-		this.EDIT_DISTANCE = editDistance;
-		return this;
-	}
+    private static final Logger logger = LogManager.getLogger(LuceneCpeSearcher.class);
+    private static final String INDEX_DIR = "lucene-index";
+    private int EDIT_DISTANCE = 10;
+    private int TOP_MATCHES_THRESHOLD = 10;
 
-	public LuceneCpeSearcher withTopMatchesThreshold(int matchThreshold) {
-		if (matchThreshold > 0) {
-			this.TOP_MATCHES_THRESHOLD = matchThreshold;
-		}
-		return this;
-	}
+    public LuceneCpeSearcher withEditDistance(int editDistance) {
+        this.EDIT_DISTANCE = editDistance;
+        return this;
+    }
 
-	public List<CpeEntry> fuzzySearch(String field, String keyword) throws Exception {
-		Directory dir = FSDirectory.open(Paths.get(INDEX_DIR));
-		List<CpeEntry> results = new ArrayList<>();
-		logger.info("Doing lucene search for - " + keyword);
-		try (DirectoryReader reader = DirectoryReader.open(dir)) {
-			IndexSearcher searcher = new IndexSearcher(reader);
-			Analyzer analyzer = new StandardAnalyzer();
-			String safeKeyword = QueryParser.escape(keyword);
-			QueryParser parser = new QueryParser(field, analyzer);
-			Query query = parser.parse(safeKeyword + "~" + this.EDIT_DISTANCE);
+    public LuceneCpeSearcher withTopMatchesThreshold(int matchThreshold) {
+        if (matchThreshold > 0) {
+            this.TOP_MATCHES_THRESHOLD = matchThreshold;
+        }
+        return this;
+    }
 
-			TopDocs topDocs = searcher.search(query, TOP_MATCHES_THRESHOLD);
-			for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-				Document doc = searcher.doc(scoreDoc.doc);
+    /**
+     * Performs a fuzzy search on a given field.
+     *
+     * @param field   Lucene field to search in
+     * @param keyword Keyword to search for
+     * @return List of matching CpeEntry
+     */
+    public List<CpeEntry> fuzzySearch(String field, String keyword) {
+        List<CpeEntry> results = new ArrayList<>();
+        logger.info("Performing fuzzy search on field '{}' for keyword '{}'", field, keyword);
 
-				CpeEntry entry = new CpeEntry();
-				entry.setEntryId(Integer.parseInt(doc.get("entryId")));
-				entry.setCpeName(doc.get("cpeName"));
-				entry.setCpeTitle(doc.get("cpeTitle"));
-				entry.setVendor(doc.get("vendor"));
-				entry.setProduct(doc.get("product"));
-				entry.setVersion(doc.get("version"));
-				entry.setDeprecated(Boolean.parseBoolean(doc.get("isDeprecated")));
+        try (Directory dir = FSDirectory.open(Paths.get(INDEX_DIR));
+             DirectoryReader reader = DirectoryReader.open(dir)) {
 
-				if (doc.get("updatedDate") != null) {
-					entry.setUpdatedDate(LocalDateTime.parse(doc.get("updatedDate")));
-				}
+            IndexSearcher searcher = new IndexSearcher(reader);
+            Analyzer analyzer = new StandardAnalyzer();
 
-				results.add(entry);
-			}
-		}
+            QueryParser parser = new QueryParser(field, analyzer);
+            Query query = parser.parse(QueryParser.escape(keyword) + "~" + this.EDIT_DISTANCE);
 
-		return results;
-	}
+            TopDocs topDocs = searcher.search(query, TOP_MATCHES_THRESHOLD);
 
-	public List<CpeEntry> multiFieldSearch(String vendorValue, String productValue) throws Exception {
-		logger.info(
-				"Lucene multifield search with vendor value: " + vendorValue + " and product value: " + productValue);
-		List<CpeEntry> results = new ArrayList<>();
+            for (ScoreDoc sd : topDocs.scoreDocs) {
+                results.add(mapDocumentToCpeEntry(searcher.doc(sd.doc)));
+            }
 
-		Directory dir = FSDirectory.open(Paths.get("lucene-index"));
-		try (DirectoryReader reader = DirectoryReader.open(dir)) {
-			IndexSearcher searcher = new IndexSearcher(reader);
-			Analyzer analyzer = new StandardAnalyzer();
+        } catch (Exception e) {
+            logger.error("Error during fuzzySearch: {}", e.getMessage(), e);
+        }
 
-			// Build queries
-			Query vendorQuery = new QueryParser("vendor", analyzer).parse(vendorValue);
-			Query productQuery = new QueryParser("product", analyzer).parse(productValue);
+        return results;
+    }
 
-			// Combine
-			BooleanQuery.Builder builder = new BooleanQuery.Builder();
-			builder.add(vendorQuery, BooleanClause.Occur.MUST);
-			builder.add(productQuery, BooleanClause.Occur.MUST);
-			BooleanQuery query = builder.build();
+    /**
+     * Performs a multi-field search for vendor and product.
+     */
+    public List<CpeEntry> multiFieldSearch(String vendorValue, String productValue) {
+        logger.info("Searching for vendor='{}', product='{}'", vendorValue, productValue);
+        List<CpeEntry> results = new ArrayList<>();
 
-			// Search
-			TopDocs topDocs = searcher.search(query, TOP_MATCHES_THRESHOLD);
-			for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-				Document doc = searcher.doc(scoreDoc.doc);
-				CpeEntry entry = new CpeEntry();
-				entry.setEntryId(Integer.parseInt(doc.get("entryId")));
-				entry.setCpeName(doc.get("cpeName"));
-				entry.setCpeTitle(doc.get("cpeTitle"));
-				entry.setVendor(doc.get("vendor"));
-				entry.setProduct(doc.get("product"));
-				entry.setVersion(doc.get("version"));
-				entry.setDeprecated(Boolean.parseBoolean(doc.get("isDeprecated")));
+        try (Directory dir = FSDirectory.open(Paths.get(INDEX_DIR));
+             DirectoryReader reader = DirectoryReader.open(dir)) {
 
-				if (doc.get("updatedDate") != null) {
-					entry.setUpdatedDate(LocalDateTime.parse(doc.get("updatedDate")));
-				}
-				results.add(entry);
-			}
-		}
-		logger.info("Returning results size: " + results.size());
-		return results;
-	}
+            IndexSearcher searcher = new IndexSearcher(reader);
+            Analyzer analyzer = new StandardAnalyzer();
 
-	public List<CpeEntry> multiFieldSearch(List<String> vendorList, String productValue) throws Exception {
-		List<CpeEntry> results = new ArrayList<>();
-		Directory dir = FSDirectory.open(Paths.get("lucene-index"));
-		try (DirectoryReader reader = DirectoryReader.open(dir)) {
-			IndexSearcher searcher = new IndexSearcher(reader);
-			Analyzer analyzer = new StandardAnalyzer();
+            BooleanQuery.Builder builder = new BooleanQuery.Builder();
+            builder.add(new QueryParser("vendor", analyzer).parse(QueryParser.escape(vendorValue)), BooleanClause.Occur.MUST);
+            builder.add(new QueryParser("product", analyzer).parse(QueryParser.escape(productValue)), BooleanClause.Occur.MUST);
 
-			// Parse product query
-			Query productQuery = new QueryParser("product", analyzer).parse(productValue);
+            TopDocs topDocs = searcher.search(builder.build(), TOP_MATCHES_THRESHOLD);
+            for (ScoreDoc sd : topDocs.scoreDocs) {
+                results.add(mapDocumentToCpeEntry(searcher.doc(sd.doc)));
+            }
 
-			// Build vendor query using OR (SHOULD)
-			BooleanQuery.Builder vendorQueryBuilder = new BooleanQuery.Builder();
-			for (String vendor : vendorList) {
-				Query vendorQuery = new QueryParser("vendor", analyzer).parse(vendor);
-				vendorQueryBuilder.add(vendorQuery, BooleanClause.Occur.SHOULD);
-			}
-			BooleanQuery vendorQuery = vendorQueryBuilder.build();
+        } catch (Exception e) {
+            logger.error("Error during multiFieldSearch(vendor, product): {}", e.getMessage(), e);
+        }
 
-			// Combine product AND vendor queries
-			BooleanQuery.Builder finalQueryBuilder = new BooleanQuery.Builder();
-			finalQueryBuilder.add(vendorQuery, BooleanClause.Occur.MUST); // match any of the vendors
-			finalQueryBuilder.add(productQuery, BooleanClause.Occur.MUST); // must match product
+        return results;
+    }
 
-			BooleanQuery finalQuery = finalQueryBuilder.build();
+    /**
+     * Performs a multi-field search for a list of vendors and a product.
+     */
+    public List<CpeEntry> multiFieldSearch(List<String> vendorList, String productValue) {
+        List<CpeEntry> results = new ArrayList<>();
+        logger.info("Searching for vendors='{}', product='{}'", vendorList, productValue);
 
-			// Execute search
-			TopDocs topDocs = searcher.search(finalQuery, TOP_MATCHES_THRESHOLD);
-			for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-				Document doc = searcher.doc(scoreDoc.doc);
-				CpeEntry entry = new CpeEntry();
-				entry.setEntryId(Integer.parseInt(doc.get("entryId")));
-				entry.setCpeName(doc.get("cpeName"));
-				entry.setCpeTitle(doc.get("cpeTitle"));
-				entry.setVendor(doc.get("vendor"));
-				entry.setProduct(doc.get("product"));
-				entry.setVersion(doc.get("version"));
-				entry.setDeprecated(Boolean.parseBoolean(doc.get("isDeprecated")));
+        try (Directory dir = FSDirectory.open(Paths.get(INDEX_DIR));
+             DirectoryReader reader = DirectoryReader.open(dir)) {
 
-				if (doc.get("updatedDate") != null) {
-					entry.setUpdatedDate(LocalDateTime.parse(doc.get("updatedDate")));
-				}
-				results.add(entry);
-			}
-		}
+            IndexSearcher searcher = new IndexSearcher(reader);
+            Analyzer analyzer = new StandardAnalyzer();
 
-		return results;
-	}
+            BooleanQuery.Builder vendorQuery = new BooleanQuery.Builder();
+            for (String vendor : vendorList) {
+                vendorQuery.add(new QueryParser("vendor", analyzer).parse(QueryParser.escape(vendor)), BooleanClause.Occur.SHOULD);
+            }
 
-	public List<CpeEntry> multiFieldSearch(List<String> vendorList, List<String> productList) throws Exception {
-		List<CpeEntry> results = new ArrayList<>();
-		logger.info("Doing multi-field search with vendorList size: " + vendorList.size()
-				+ " productList size: " + productList.size());
-		Directory dir = FSDirectory.open(Paths.get("lucene-index"));
-		try (DirectoryReader reader = DirectoryReader.open(dir)) {
-			IndexSearcher searcher = new IndexSearcher(reader);
-			Analyzer analyzer = new StandardAnalyzer();
+            Query productQuery = new QueryParser("product", analyzer).parse(QueryParser.escape(productValue));
 
-			BooleanQuery.Builder finalQueryBuilder = new BooleanQuery.Builder();
-			// Parse product query
-//			Query productQuery = new QueryParser("product", analyzer).parse(productValue);
+            BooleanQuery finalQuery = new BooleanQuery.Builder()
+                    .add(vendorQuery.build(), BooleanClause.Occur.MUST)
+                    .add(productQuery, BooleanClause.Occur.MUST)
+                    .build();
 
-			// Build vendor query using OR (SHOULD)
-			BooleanQuery.Builder vendorQueryBuilder = new BooleanQuery.Builder();
-			for (String vendor : vendorList) {
-				Query vendorQuery = new QueryParser("vendor", analyzer).parse(vendor);
-				vendorQueryBuilder.add(vendorQuery, BooleanClause.Occur.SHOULD);
-			}
-			BooleanQuery vendorQuery = vendorQueryBuilder.build();
+            TopDocs topDocs = searcher.search(finalQuery, TOP_MATCHES_THRESHOLD);
+            for (ScoreDoc sd : topDocs.scoreDocs) {
+                results.add(mapDocumentToCpeEntry(searcher.doc(sd.doc)));
+            }
 
-			// Combine product AND vendor queries
-//			BooleanQuery.Builder finalQueryBuilder = new BooleanQuery.Builder();
-			finalQueryBuilder.add(vendorQuery, BooleanClause.Occur.MUST); // match any of the vendors
-//			finalQueryBuilder.add(productQuery, BooleanClause.Occur.MUST); // must match product
+        } catch (Exception e) {
+            logger.error("Error during multiFieldSearch(List<String>, String): {}", e.getMessage(), e);
+        }
 
-			// Product query (OR among products)
-			if (productList != null && !productList.isEmpty()) {
-				BooleanQuery.Builder productQueryBuilder = new BooleanQuery.Builder();
-				for (String product : productList) {
-					Query productQuery = new QueryParser("product", analyzer).parse(QueryParser.escape(product));
-					productQueryBuilder.add(productQuery, BooleanClause.Occur.SHOULD);
-				}
-				finalQueryBuilder.add(productQueryBuilder.build(), BooleanClause.Occur.MUST);
-			}
+        return results;
+    }
 
-			BooleanQuery finalQuery = finalQueryBuilder.build();
+    /**
+     * Searches with multiple vendors, products and versions.
+     */
+    public List<CpeEntry> multiFieldSearch(List<String> vendorList, List<String> productList, List<String> versionList) {
+        List<CpeEntry> results = new ArrayList<>();
+        logger.info("Searching for vendors={}, products={}, versions={}", vendorList, productList, versionList);
 
-			// Execute search
-			TopDocs topDocs = searcher.search(finalQuery, TOP_MATCHES_THRESHOLD);
-			for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-				Document doc = searcher.doc(scoreDoc.doc);
-				CpeEntry entry = new CpeEntry();
-				entry.setEntryId(Integer.parseInt(doc.get("entryId")));
-				entry.setCpeName(doc.get("cpeName"));
-				entry.setCpeTitle(doc.get("cpeTitle"));
-				entry.setVendor(doc.get("vendor"));
-				entry.setProduct(doc.get("product"));
-				entry.setVersion(doc.get("version"));
-				entry.setDeprecated(Boolean.parseBoolean(doc.get("isDeprecated")));
+        try (Directory dir = FSDirectory.open(Paths.get(INDEX_DIR));
+             DirectoryReader reader = DirectoryReader.open(dir)) {
 
-				if (doc.get("updatedDate") != null) {
-					entry.setUpdatedDate(LocalDateTime.parse(doc.get("updatedDate")));
-				}
-				results.add(entry);
-			}
-		}
+            IndexSearcher searcher = new IndexSearcher(reader);
+            Analyzer analyzer = new StandardAnalyzer();
+            BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
 
-		return results;
-	}
+            addTermsToQuery("vendor", vendorList, analyzer, queryBuilder);
+            addTermsToQuery("product", productList, analyzer, queryBuilder);
+            addTermsToQuery("version", versionList, analyzer, queryBuilder);
 
-	public List<CpeEntry> multiFieldSearch(List<String> vendorList, List<String> productList,
-			List<String> versionList) throws Exception {
-		List<CpeEntry> results = new ArrayList<>();
-		Directory dir = FSDirectory.open(Paths.get("lucene-index"));
-		logger.info("Doing all field match with vedorList size: " + vendorList.size() + " productList size: "
-				+ productList.size() + " verisonList size: " + versionList.size());
-		try (DirectoryReader reader = DirectoryReader.open(dir)) {
-			IndexSearcher searcher = new IndexSearcher(reader);
-			Analyzer analyzer = new StandardAnalyzer();
+            Query query = queryBuilder.build();
 
-			BooleanQuery.Builder finalQueryBuilder = new BooleanQuery.Builder();
+            TopDocs topDocs = searcher.search(query, TOP_MATCHES_THRESHOLD);
+            for (ScoreDoc sd : topDocs.scoreDocs) {
+                results.add(mapDocumentToCpeEntry(searcher.doc(sd.doc)));
+            }
 
-			// Vendor query (OR among vendors)
-			if (vendorList != null && !vendorList.isEmpty()) {
-				BooleanQuery.Builder vendorQueryBuilder = new BooleanQuery.Builder();
-				for (String vendor : vendorList) {
-					Query vendorQuery = new QueryParser("vendor", analyzer).parse(QueryParser.escape(vendor));
-					vendorQueryBuilder.add(vendorQuery, BooleanClause.Occur.SHOULD);
-				}
-				finalQueryBuilder.add(vendorQueryBuilder.build(), BooleanClause.Occur.MUST);
-			}
+        } catch (Exception e) {
+            logger.error("Error in multiFieldSearch(List, List, List): {}", e.getMessage(), e);
+        }
 
-			// Product query (OR among products)
-			if (productList != null && !productList.isEmpty()) {
-				BooleanQuery.Builder productQueryBuilder = new BooleanQuery.Builder();
-				for (String product : productList) {
-					Query productQuery = new QueryParser("product", analyzer).parse(QueryParser.escape(product));
-					productQueryBuilder.add(productQuery, BooleanClause.Occur.SHOULD);
-				}
-				finalQueryBuilder.add(productQueryBuilder.build(), BooleanClause.Occur.MUST);
-			}
-			if (versionList != null) {
-				// Version query (OR among versions)
-				if (versionList != null && !versionList.isEmpty()) {
-					BooleanQuery.Builder versionQueryBuilder = new BooleanQuery.Builder();
-					for (String version : versionList) {
-						Query versionQuery = new QueryParser("version", analyzer).parse(QueryParser.escape(version));
-						versionQueryBuilder.add(versionQuery, BooleanClause.Occur.SHOULD);
-					}
-					finalQueryBuilder.add(versionQueryBuilder.build(), BooleanClause.Occur.MUST);
-				}
-			}
-			Query finalQuery = finalQueryBuilder.build();
+        return results;
+    }
 
-			TopDocs topDocs = searcher.search(finalQuery, TOP_MATCHES_THRESHOLD);
-			for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-				Document doc = searcher.doc(scoreDoc.doc);
-				CpeEntry entry = new CpeEntry();
-				entry.setEntryId(Integer.parseInt(doc.get("entryId")));
-				entry.setCpeName(doc.get("cpeName"));
-				entry.setCpeTitle(doc.get("cpeTitle"));
-				entry.setVendor(doc.get("vendor"));
-				entry.setProduct(doc.get("product"));
-				entry.setVersion(doc.get("version"));
-				entry.setDeprecated(Boolean.parseBoolean(doc.get("isDeprecated")));
+    /**
+     * Search using normalized token-based search (vendor, product, version).
+     */
+    public List<CpeEntry> multiFieldSearch(String vendorValue, String productValue, String versionValue) {
+        List<CpeEntry> results = new ArrayList<>();
+        logger.info("Token-based search for vendor='{}', product='{}', version='{}'", vendorValue, productValue, versionValue);
 
-				if (doc.get("updatedDate") != null) {
-					entry.setUpdatedDate(LocalDateTime.parse(doc.get("updatedDate")));
-				}
+        try (Directory dir = FSDirectory.open(Paths.get(INDEX_DIR));
+             DirectoryReader reader = DirectoryReader.open(dir)) {
 
-				results.add(entry);
-			}
-		} catch (Exception e) {
-			logger.info("Error while doing multi-field search: " + e.getMessage());
+            IndexSearcher searcher = new IndexSearcher(reader);
+            Analyzer analyzer = new StandardAnalyzer();
+            BooleanQuery.Builder finalQueryBuilder = new BooleanQuery.Builder();
 
-		}
-		logger.info("Returning fuzzy search results size: " + results.size());
-		return results;
-	}
-	
-	public List<CpeEntry> multiFieldSearch(String vendorValue, String productValue, String versionValue) throws Exception {
-	    logger.info("Lucene multifield search with vendor: " + vendorValue + ", product: " + productValue + ", version: " + versionValue);
-	    List<CpeEntry> results = new ArrayList<>();
+            addAnalyzedFieldQuery("vendor", vendorValue, analyzer, finalQueryBuilder);
+            addAnalyzedFieldQuery("product", productValue, analyzer, finalQueryBuilder);
+            addVersionQuery("tokenizedVersion", versionValue, finalQueryBuilder);
 
-	    if ((vendorValue == null || vendorValue.isBlank()) &&
-	        (productValue == null || productValue.isBlank()) &&
-	        (versionValue == null || versionValue.isBlank())) {
-	        throw new IllegalArgumentException("At least one of vendor, product, or version must be provided.");
-	    }
+            Query finalQuery = finalQueryBuilder.build();
 
-	    Directory dir = FSDirectory.open(Paths.get("lucene-index"));
-	    try (DirectoryReader reader = DirectoryReader.open(dir)) {
-	        IndexSearcher searcher = new IndexSearcher(reader);
-	        Analyzer analyzer = new StandardAnalyzer();
+            TopDocs topDocs = searcher.search(finalQuery, TOP_MATCHES_THRESHOLD);
+            for (ScoreDoc sd : topDocs.scoreDocs) {
+                results.add(mapDocumentToCpeEntry(searcher.doc(sd.doc)));
+            }
 
-	        BooleanQuery.Builder finalQueryBuilder = new BooleanQuery.Builder();
+        } catch (Exception e) {
+            logger.error("Error during tokenized multiFieldSearch: {}", e.getMessage(), e);
+        }
 
-	        // VENDOR
-	        if (vendorValue != null && !vendorValue.isBlank()) {
-	            String normalizedVendor = normalize(vendorValue);
-	            List<String> vendorTokens = getAnalyzedTokens("vendor", normalizedVendor, analyzer);
-	            logger.info("Vendor tokens: " + vendorTokens);
-	            BooleanQuery.Builder vendorQueryBuilder = new BooleanQuery.Builder();
-	            for (String token : vendorTokens) {
-	                vendorQueryBuilder.add(new TermQuery(new Term("vendor", token)), BooleanClause.Occur.SHOULD);
-	            }
-	            finalQueryBuilder.add(vendorQueryBuilder.build(), BooleanClause.Occur.MUST);
-	        }
+        return results;
+    }
 
-	        // PRODUCT
-	        if (productValue != null && !productValue.isBlank()) {
-	            String normalizedProduct = normalize(productValue);
-	            List<String> productTokens = getAnalyzedTokens("product", normalizedProduct, analyzer);
-	            logger.info("Product tokens: " + productTokens);
-	            BooleanQuery.Builder productQueryBuilder = new BooleanQuery.Builder();
-	            for (String token : productTokens) {
-	                productQueryBuilder.add(new TermQuery(new Term("product", token)), BooleanClause.Occur.SHOULD);
-	            }
-	            finalQueryBuilder.add(productQueryBuilder.build(), BooleanClause.Occur.MUST);
-	        }
+    private void addTermsToQuery(String field, List<String> values, Analyzer analyzer, BooleanQuery.Builder builder) {
+        if (values != null && !values.isEmpty()) {
+            BooleanQuery.Builder inner = new BooleanQuery.Builder();
+            for (String val : values) {
+            	try {
+                inner.add(new QueryParser(field, analyzer).parse(QueryParser.escape(val)), BooleanClause.Occur.SHOULD);
+            	} catch (Exception e) {
+            		logger.warn("Error parsing query for field '{}': {}", field, e.getMessage(), e);
+            	}
+            }
+            builder.add(inner.build(), BooleanClause.Occur.MUST);
+        }
+    }
 
-	        // VERSION
-	        if (versionValue != null && !versionValue.isBlank()) {
-	        	List<String> versionTokens = getVersionPrefixes(versionValue);
-	            logger.info("Version tokens: " + versionTokens);
-	            BooleanQuery.Builder versionQueryBuilder = new BooleanQuery.Builder();
-	            for (String token : versionTokens) {
-	                versionQueryBuilder.add(new TermQuery(new Term("tokenizedVersion", token)), BooleanClause.Occur.SHOULD);
-	            }
-	            finalQueryBuilder.add(versionQueryBuilder.build(), BooleanClause.Occur.MUST);
-	        }
+    private void addAnalyzedFieldQuery(String field, String value, Analyzer analyzer, BooleanQuery.Builder builder) throws IOException {
+        if (value != null && !value.isBlank()) {
+            List<String> tokens = getAnalyzedTokens(field, normalize(value), analyzer);
+            BooleanQuery.Builder inner = new BooleanQuery.Builder();
+            for (String token : tokens) {
+                inner.add(new TermQuery(new Term(field, token)), BooleanClause.Occur.SHOULD);
+            }
+            builder.add(inner.build(), BooleanClause.Occur.MUST);
+        }
+    }
 
-	        Query query = finalQueryBuilder.build();
+    private void addVersionQuery(String field, String versionValue, BooleanQuery.Builder builder) {
+        if (versionValue != null && !versionValue.isBlank()) {
+            List<String> tokens = getVersionPrefixes(versionValue);
+            BooleanQuery.Builder versionBuilder = new BooleanQuery.Builder();
+            for (String token : tokens) {
+                versionBuilder.add(new TermQuery(new Term(field, token)), BooleanClause.Occur.SHOULD);
+            }
+            builder.add(versionBuilder.build(), BooleanClause.Occur.MUST);
+        }
+    }
 
-	        TopDocs topDocs = searcher.search(query, TOP_MATCHES_THRESHOLD);
-	        logger.info("Lucene search executed, total hits: " + topDocs.totalHits.value);
+    private List<String> getAnalyzedTokens(String fieldName, String input, Analyzer analyzer) throws IOException {
+        List<String> tokens = new ArrayList<>();
+        try (TokenStream tokenStream = analyzer.tokenStream(fieldName, input)) {
+            CharTermAttribute attr = tokenStream.addAttribute(CharTermAttribute.class);
+            tokenStream.reset();
+            while (tokenStream.incrementToken()) {
+                tokens.add(attr.toString());
+            }
+            tokenStream.end();
+        }
+        return tokens;
+    }
 
-	        for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-	            Document doc = searcher.doc(scoreDoc.doc);
-	            CpeEntry entry = new CpeEntry();
-	            entry.setEntryId(Integer.parseInt(doc.get("entryId")));
-	            entry.setCpeName(doc.get("cpeName"));
-	            entry.setCpeTitle(doc.get("cpeTitle"));
-	            entry.setVendor(doc.get("vendor"));
-	            entry.setProduct(doc.get("product"));
-	            entry.setVersion(doc.get("version"));
-	            entry.setDeprecated(Boolean.parseBoolean(doc.get("isDeprecated")));
+    private String normalize(String input) {
+        return input.toLowerCase().replaceAll("[^a-z0-9\\s]", "").trim();
+    }
 
-	            if (doc.get("updatedDate") != null) {
-	                entry.setUpdatedDate(LocalDateTime.parse(doc.get("updatedDate")));
-	            }
-	            results.add(entry);
-	        }
-	    }
+    private List<String> getVersionPrefixes(String version) {
+        List<String> tokens = new ArrayList<>();
+        if (version == null || version.isBlank()) return tokens;
 
-	   logger.info("Returning results size: " + results.size());
-	    return results;
-	}
+        String[] parts = version.split("\\.");
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < parts.length; i++) {
+            if (i > 0) builder.append(".");
+            builder.append(parts[i]);
+            tokens.add(builder.toString());
+        }
+        return tokens;
+    }
 
-
-	private List<String> getAnalyzedTokens(String fieldName, String input, Analyzer analyzer) throws IOException {
-	    List<String> tokens = new ArrayList<>();
-	    TokenStream tokenStream = analyzer.tokenStream(fieldName, input);
-	    CharTermAttribute attr = tokenStream.addAttribute(CharTermAttribute.class);
-	    tokenStream.reset();
-	    while (tokenStream.incrementToken()) {
-	        tokens.add(attr.toString());
-	    }
-	    tokenStream.end();
-	    tokenStream.close();
-	    return tokens;
-	}
-	
-	private String normalize(String input) {
-	    return input.toLowerCase().replaceAll("[^a-z0-9\\s]", "").trim();
-	}
-	
-	private List<String> getVersionPrefixes(String version) {
-	    List<String> tokens = new ArrayList<>();
-	    if (version == null || version.isBlank()) return tokens;
-
-	    String[] parts = version.split("\\.");
-	    StringBuilder builder = new StringBuilder();
-	    for (int i = 0; i < parts.length; i++) {
-	        if (i > 0) builder.append(".");
-	        builder.append(parts[i]);
-	        tokens.add(builder.toString());
-	    }
-	    return tokens;
-	}
+    private CpeEntry mapDocumentToCpeEntry(Document doc) {
+        CpeEntry entry = new CpeEntry();
+        try {
+            entry.setEntryId(Integer.parseInt(doc.get("entryId")));
+            entry.setCpeName(doc.get("cpeName"));
+            entry.setCpeTitle(doc.get("cpeTitle"));
+            entry.setVendor(doc.get("vendor"));
+            entry.setProduct(doc.get("product"));
+            entry.setVersion(doc.get("version"));
+            entry.setDeprecated(Boolean.parseBoolean(doc.get("isDeprecated")));
+            if (doc.get("updatedDate") != null) {
+                entry.setUpdatedDate(LocalDateTime.parse(doc.get("updatedDate")));
+            }
+        } catch (Exception e) {
+            logger.warn("Error mapping Lucene document to CpeEntry: {}", e.getMessage(), e);
+        }
+        return entry;
+    }
 }

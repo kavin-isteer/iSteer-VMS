@@ -62,15 +62,15 @@ public class Engine {
 
 		vendorEvidence.setEvidenceType(EvidenceType.APPLICATION);
 		vendorEvidence.setEvidenceTitle(evidenceTitle);
-		vendorEvidence.setEvidence(application.getVendorName());
+		vendorEvidence.setEvidences(application.getVendorName());
 
 		productEvidence.setEvidenceType(EvidenceType.APPLICATION);
 		productEvidence.setEvidenceTitle(evidenceTitle);
-		productEvidence.setEvidence(application.getSoftwareName());
+		productEvidence.setEvidences(application.getSoftwareName());
 
 		versionEvidence.setEvidenceType(EvidenceType.APPLICATION);
 		versionEvidence.setEvidenceTitle(evidenceTitle);
-		versionEvidence.setEvidence(application.getSoftwareVersion());
+		versionEvidence.setEvidences(application.getSoftwareVersion());
 		versionEvidence.setResolvedValue(application.getSoftwareVersion());
 		cpe.setVersion(application.getSoftwareVersion());
 		cpe.addResolveMethod(CpeField.VERSION, ResolveMethod.ARBITRARY);

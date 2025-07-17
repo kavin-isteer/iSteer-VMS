@@ -28,7 +28,7 @@ public enum Message {
 		INVALID_INPUT(5008, "invalid.input"), DATA_INTEGRITY_VIOLATION(5009, "data.integrity.violation"),
 		VALIDATION_ERROR(5010, "validation.error"), NULL_POINTER_EXCEPTION(5011, "null.pointer.exception"),
 		INVALID_SQL_SYNTAX(5012, "invalid.sql.syntax"), ILLEGAL_ARGUMENT(5013, "illegal.argument.exception"),
-		Internal_Server_Error(9000, "internal.error"), INVALID_DATE_FORMAT(5014, "invalid.date.format"),
+		INTERNAL_SERVER_ERROR(9000, "internal.error"), INVALID_DATE_FORMAT(5014, "invalid.date.format"),
 		NO_CHANGES(2033, "no.changes.detected"), APPLICATION_NAME_BLANK(2108, "application.name.blank"),
 		DUPLICATE_APPLICATIONS(2109, "duplicate.applications"),;
 

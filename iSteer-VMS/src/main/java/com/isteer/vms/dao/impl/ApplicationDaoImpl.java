@@ -77,10 +77,9 @@ public class ApplicationDaoImpl implements ApplicationDao {
 		try {
 			return namedParameterJdbcTemplate.query(query, params, new ComputerApplicationRowMapper());
 		} catch (Exception e) {
-			e.printStackTrace();
 			// Handle exception or log it
+			return List.of();
 		}
-		return null;
 	}
 
 	@Override

@@ -1,6 +1,7 @@
 package com.isteer.vms.core.engine.nvdclient;
 
 import java.io.UnsupportedEncodingException;
+import java.lang.System.Logger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
@@ -29,14 +30,24 @@ import com.isteer.vms.core.engine.model.VulnerabilityCvssMetrics;
 import com.isteer.vms.core.engine.model.VulnerabilityReference;
 import com.isteer.vms.exception.NvdApiException;
 import com.jayway.jsonpath.JsonPath;
+
+import lombok.extern.log4j.Log4j2;
+
 @Service
+@Log4j2
 public class NvdClient {
-	@Autowired
-	RestTemplate restTemplate;
+
+	private RestTemplate restTemplate;
 	
+	
+	public NvdClient(RestTemplate restTemplate) {
+		super();
+		this.restTemplate = restTemplate;
+	}
+
 	private static final String CVE_BASE_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0";
 	@Value("${nvd.api.key}")
-	private String API_KEY;
+	private String apiKey;
 	
 	/**
      * Fetches and attaches vulnerability data for a given dependency based on its CPE enumeration.
@@ -59,7 +70,7 @@ public class NvdClient {
 		Object cveApiResponse = null;
 
 		HttpHeaders headers = new HttpHeaders();
-		headers.set("apiKey", API_KEY);
+		headers.set("apiKey", apiKey);
 		HttpEntity<String> entity = new HttpEntity<>(headers);
 
 		try {
@@ -67,7 +78,7 @@ public class NvdClient {
 			String cveUrl = String.format("%s?cpeName=%s", CVE_BASE_URL, encodedCpe);
 			URI uri = new URI(cveUrl);
 			ResponseEntity<Object> cveResponse = restTemplate.exchange(uri, HttpMethod.GET, entity, Object.class);
-			if (cveResponse != null && cveResponse.getStatusCode().is2xxSuccessful()) {
+			if (cveResponse.getBody() != null && cveResponse.getStatusCode().is2xxSuccessful()) {
 				cveApiResponse = cveResponse.getBody();
 				if (cveApiResponse != null) {
 					VulnerabilitiesForCpeName parsedVulnerability = new VulnerabilitiesForCpeName();
@@ -83,11 +94,9 @@ public class NvdClient {
 		} catch (RestClientException e) {
 			throw new NvdApiException("CVE API error: " + e.getMessage(), 500);
 		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			throw new NvdApiException("CVE Encoding error: " + e.getMessage(), 400);
 		} catch (URISyntaxException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			throw new NvdApiException("CVE URI error: " + e.getMessage(), 400);
 		}
 
 		return application;
@@ -124,7 +133,7 @@ public class NvdClient {
 				}
 			}
 		} catch (Exception e) {
-			System.err.println("Error parsing CPE API response: " + e.getMessage());
+			log.error("Error parsing CPE API response: " + e.getMessage());
 		}
 		return cpeNames;
 	}
@@ -169,7 +178,7 @@ public class NvdClient {
 				}
 			}
 		} catch (Exception e) {
-			System.err.println("Error parsing CVE API response: " + e.getMessage());
+			log.error("Error parsing CVE API response: " + e.getMessage());
 		}
 		return vulnerabilityDetails;
 	}
@@ -222,7 +231,7 @@ public class NvdClient {
 				}
 			}
 		} catch (Exception e) {
-			System.err.println("Error processing CVSS metrics: " + e.getMessage());
+			log.error("Error processing CVSS metrics: " + e.getMessage());
 		}
 		return parsedCvssMetrics;
 	}
@@ -265,7 +274,7 @@ public class NvdClient {
 				}
 			}
 		} catch (Exception e) {
-			System.err.println("Error processing affected products: " + e.getMessage());
+			log.error("Error processing affected products: " + e.getMessage());
 		}
 
 		return affectedProducts;
@@ -292,7 +301,7 @@ public class NvdClient {
 				}
 			}
 		} catch (Exception e) {
-			System.err.println("Error processing references: " + e.getMessage());
+			log.error("Error processing references: " + e.getMessage());
 		}
 
 		return mitigationReferences;
