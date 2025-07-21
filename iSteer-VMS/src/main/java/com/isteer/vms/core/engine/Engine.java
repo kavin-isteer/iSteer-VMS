@@ -1,8 +1,11 @@
 package com.isteer.vms.core.engine;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
@@ -32,18 +35,24 @@ public class Engine {
 	}
 
 	public Map<String, BaseApplication> collectEvidencesAndFetchVulnerabilities(List<Application> applications) {
-		Map<String, BaseApplication> insertedApplications = new HashMap<>();
+	    List<CompletableFuture<BaseApplication>> futures = new ArrayList<>();
 
-		for (Application application : applications) {
-			if (!application.getUuid().isEmpty() && application.getUuid() != null) {
-				log.info("Resolving CPE name for application: {}", application.getUuid());
-				BaseApplication resolvedApplication = resolveSoftwareNames(application);
-				log.info("Fetching vulnerabilities for application: {}", application.getUuid());
-				nvdClient.fetchVulnerabilitiesForDependency(resolvedApplication);
-				insertedApplications.put(application.getUuid(), resolvedApplication);
-			}
-		}
-		return insertedApplications;
+	    for (Application app : applications) {
+	        BaseApplication baseApp = resolveSoftwareNames(app);
+	        CompletableFuture<BaseApplication> future = nvdClient.fetchVulnerabilitiesRateLimited(baseApp);
+	        futures.add(future);
+	    }
+
+	    // Wait for all to complete
+	    CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+	    // Now safely collect results
+	    return futures.stream()
+	        .map(CompletableFuture::join)
+	        .collect(Collectors.toMap(
+	            app -> app.getApplication().getUuid(),
+	            app -> app
+	        ));
 	}
 
 	private BaseApplication resolveSoftwareNames(Application application) {
