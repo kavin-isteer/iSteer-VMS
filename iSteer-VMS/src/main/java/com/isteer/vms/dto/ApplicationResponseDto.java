@@ -19,6 +19,8 @@ public class ApplicationResponseDto {
 	private String softwareName;
 	private String softwareVersion;
 	private String vendor;
+	private String cpeName;
+	private boolean isResolved;
 	@Builder.Default
 	private int criticalVulnerabilityCount = 0;
 	@Builder.Default

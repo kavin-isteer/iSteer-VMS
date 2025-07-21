@@ -1,7 +1,9 @@
 package com.isteer.vms.core.engine;
 
+import java.io.File;
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -13,6 +15,7 @@ import com.isteer.vms.core.engine.dao.CpeHintDao;
 import com.isteer.vms.core.engine.enums.CpeField;
 import com.isteer.vms.core.engine.enums.EvidenceType;
 import com.isteer.vms.core.engine.enums.ResolveMethod;
+import com.isteer.vms.core.engine.lucene.LuceneIndexRunner;
 import com.isteer.vms.core.engine.model.BaseApplication;
 import com.isteer.vms.core.engine.model.CpeName;
 import com.isteer.vms.core.engine.model.Evidence;
@@ -27,11 +30,12 @@ public class Engine {
 
 	private CpeHintDao cpeHintDao;
 	private NvdClient nvdClient;
+	private static LuceneIndexRunner luceneIndexRunner;
 
-	public Engine(CpeHintDao cpeHintDao, NvdClient nvdClient) {
-		super();
+	public Engine(CpeHintDao cpeHintDao, NvdClient nvdClient,LuceneIndexRunner luceneIndexRnr) {
 		this.cpeHintDao = cpeHintDao;
 		this.nvdClient = nvdClient;
+		luceneIndexRunner = luceneIndexRnr;
 	}
 
 	public Map<String, BaseApplication> collectEvidencesAndFetchVulnerabilities(List<Application> applications) {
@@ -85,25 +89,41 @@ public class Engine {
 		cpe.addResolveMethod(CpeField.VERSION, ResolveMethod.ARBITRARY);
 
 		String resolvedVendor = cpeHintDao.getStandardisedNameForMatchKey(application.getVendorName(), "vendor");
-
-		if (resolvedVendor != null && !resolvedVendor.isEmpty()) {
+		String resolvedProduct = cpeHintDao.getStandardisedNameForMatchKey(application.getSoftwareName(), "product");
+		
+		if (resolvedVendor != null && !resolvedVendor.isEmpty() && resolvedProduct != null && !resolvedProduct.isEmpty()) {
 			vendorEvidence.setResolvedValue(resolvedVendor);
 			cpe.setVendor(resolvedVendor);
 			cpe.addResolveMethod(CpeField.VENDOR, ResolveMethod.HINT_BY_DEVELOPER);
-		}
-
-		String resolvedProduct = cpeHintDao.getStandardisedNameForMatchKey(application.getSoftwareName(), "product");
-		if (resolvedProduct != null && !resolvedProduct.isEmpty()) {
 			productEvidence.setResolvedValue(resolvedProduct);
 			cpe.setProduct(resolvedProduct);
 			cpe.addResolveMethod(CpeField.PRODUCT, ResolveMethod.HINT_BY_DEVELOPER);
 		}
-
+		
 		resolvedApplication.addVendorEvidence(vendorEvidence);
 		resolvedApplication.addProductEvidence(productEvidence);
 		resolvedApplication.addVersionEvidence(versionEvidence);
 		resolvedApplication.setCpeEnumeration(cpe);
 
 		return resolvedApplication;
+	}
+	
+	public static void initializeLuceneIndex() {
+		Engine.log.info("Initializing lucene index....");
+		try {
+			File indexDir = new File("lucene-index");
+			boolean indexExists = indexDir.exists() && indexDir.isDirectory() && indexDir.list().length > 0;
+
+			if (!indexExists) {
+				log.info("Lucene index not exists.... Creating index");
+				luceneIndexRunner.createIndexFromCvssDb();
+			}else {
+				log.info("Lucene index found...!!");
+			}
+		} catch (IOException e) {
+			log.error("IO Exception occured during creating lucene index for CPE Entries!!");
+		} catch (SQLException e) {
+			log.error("SQL exception occured while fetcihng CPE entries from DB!!");
+		}
 	}
 }

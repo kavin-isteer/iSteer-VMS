@@ -18,7 +18,6 @@ public class LuceneIndexRunner {
 	private CPEEntriesDao cpeEntriesDao;
 	
 	public LuceneIndexRunner(CPEEntriesDao cpeEntriesDao) {
-		super();
 		this.cpeEntriesDao = cpeEntriesDao;
 	}
 
