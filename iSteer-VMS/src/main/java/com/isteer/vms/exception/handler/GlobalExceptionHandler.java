@@ -2,7 +2,6 @@ package com.isteer.vms.exception.handler;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -10,6 +9,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import com.isteer.vms.dto.ErrorMessageDto;
 import com.isteer.vms.enums.Message;
 import com.isteer.vms.exception.BusinessException;
+import com.isteer.vms.response.ResponseCode;
+import com.isteer.vms.response.ResponseUtil;
 
 import lombok.extern.log4j.Log4j2;
 
@@ -27,10 +28,15 @@ public class GlobalExceptionHandler {
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
-	public ResponseEntity<ErrorMessageDto> handleValidationException(MethodArgumentNotValidException ex) {
-		FieldError fieldError = ex.getBindingResult().getFieldError();
-		String errorMesssage = fieldError != null ? fieldError.getDefaultMessage() : "Validation failed";
-		return new ResponseEntity<>(new ErrorMessageDto(Message.VALIDATION_ERROR.getStatusCode(), errorMesssage),
-				HttpStatus.BAD_REQUEST);
+	public ResponseEntity<Object> handleValidation(MethodArgumentNotValidException ex) {
+	    // Get first error
+	    var fieldError = ex.getBindingResult().getFieldError();
+
+	    // Fallback to default message from enum if none present
+	    String errorMessage = (fieldError != null && fieldError.getDefaultMessage() != null && !fieldError.getDefaultMessage().isBlank())
+	        ? fieldError.getDefaultMessage()
+	        : ResponseCode.METHOD_ARGUMENT_NOT_VALID.getMessage();
+
+	    return ResponseUtil.message(ResponseCode.METHOD_ARGUMENT_NOT_VALID.getCode(), errorMessage, HttpStatus.BAD_REQUEST);
 	}
 }

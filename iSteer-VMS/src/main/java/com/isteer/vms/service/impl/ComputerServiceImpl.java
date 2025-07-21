@@ -54,11 +54,9 @@ public class ComputerServiceImpl implements ComputerService {
 			if (!existing.isActive())
 				return -2;
 
-			System.out.println("Check if update required: " + checkIfUpdateRequired(computer, existing));
 			if (!checkIfUpdateRequired(computer, existing)) {
 				existing = updateExistingComputer(existing, computer);
 				log.info("Updating existing computer with deviceId: {}", computer.getDeviceId());
-				System.out.println("Updating details: " + existing.toString());
 				int status = computerDao.createOrUpdateComputer(existing);
 				return finalizeStatus(status, applicationService.createOrUpdateApplication(existing.getUuid(),
 						computer.getInstalledSoftwares()), false);
@@ -99,7 +97,6 @@ public class ComputerServiceImpl implements ComputerService {
 	}
 
 	private int finalizeStatus(int compStatus, int appStatus, boolean noUpdateRequired) {
-		System.out.println("computer status: " + compStatus + ", application status: " + appStatus + ", noUpdateRequired: " + noUpdateRequired);
 		if (appStatus == -1)
 			return -3;
 		if (compStatus == 1 && appStatus == 1)
@@ -118,8 +115,6 @@ public class ComputerServiceImpl implements ComputerService {
 	}
 
 	private boolean checkIfUpdateRequired(ComputerPayloadDto payload, Computer existing) {
-//		System.out.println("Payload: " + payload.toString());
-//		System.out.println("Existing: " + existing.toString());
 		return isEqual(existing.getMachineName(), payload.getMachineName())
 				&& isEqual(existing.getIpAddress(), payload.getIpAddress())
 				&& isEqual(existing.getOsVersion(), payload.getOsVersion())

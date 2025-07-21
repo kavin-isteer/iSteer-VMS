@@ -1,7 +1,6 @@
 package com.isteer.vms.core.engine.nvdclient;
 
 import java.io.UnsupportedEncodingException;
-import java.lang.System.Logger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
@@ -9,8 +8,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -38,16 +37,22 @@ import lombok.extern.log4j.Log4j2;
 public class NvdClient {
 
 	private RestTemplate restTemplate;
+	private RateLimiter rateLimiter;
 	
 	
-	public NvdClient(RestTemplate restTemplate) {
+	public NvdClient(RestTemplate restTemplate, RateLimiter rateLimiter) {
 		super();
 		this.restTemplate = restTemplate;
+		this.rateLimiter = rateLimiter;
 	}
 
 	private static final String CVE_BASE_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0";
 	@Value("${nvd.api.key}")
 	private String apiKey;
+	
+	 public CompletableFuture<BaseApplication> fetchVulnerabilitiesRateLimited(BaseApplication application) {
+	        return rateLimiter.submit(() -> fetchVulnerabilitiesForDependency(application));
+	    }
 	
 	/**
      * Fetches and attaches vulnerability data for a given dependency based on its CPE enumeration.
@@ -56,6 +61,7 @@ public class NvdClient {
      * @return The updated dependency model with vulnerabilities, if any.
      */
 	public BaseApplication fetchVulnerabilitiesForDependency(BaseApplication application) {
+		String cveUrl = null;
 		if (application == null || application.getCpeEnumeration() == null) {
 			// No dependency or CPE info available; return as is or null
 			return application;
@@ -75,7 +81,8 @@ public class NvdClient {
 
 		try {
 			String encodedCpe = URLEncoder.encode(cpeName, StandardCharsets.UTF_8.toString());
-			String cveUrl = String.format("%s?cpeName=%s", CVE_BASE_URL, encodedCpe);
+			cveUrl = String.format("%s?cpeName=%s", CVE_BASE_URL, encodedCpe);
+			log.info("Url for fetching CVE: {}", cveUrl);
 			URI uri = new URI(cveUrl);
 			ResponseEntity<Object> cveResponse = restTemplate.exchange(uri, HttpMethod.GET, entity, Object.class);
 			if (cveResponse.getBody() != null && cveResponse.getStatusCode().is2xxSuccessful()) {
@@ -88,10 +95,12 @@ public class NvdClient {
 					}
 					application.getCpeEnumeration().setValidCpe(true);
 				} else {
+					log.error("Error for this url: {}.", cveUrl);
 					throw new NvdApiException("CVE API failed", cveResponse.getStatusCode().value());
 				}
 			}
 		} catch (RestClientException e) {
+			log.error("Error for this url: {}. Application: {}", cveUrl, application.getApplication());
 			throw new NvdApiException("CVE API error: " + e.getMessage(), 500);
 		} catch (UnsupportedEncodingException e) {
 			throw new NvdApiException("CVE Encoding error: " + e.getMessage(), 400);
@@ -99,6 +108,7 @@ public class NvdClient {
 			throw new NvdApiException("CVE URI error: " + e.getMessage(), 400);
 		}
 
+		log.info("Fetched vulnerabilities for CPE: {}", application);
 		return application;
 	}
 	
@@ -219,6 +229,23 @@ public class NvdClient {
 									cvssMetricModel.setScope(JsonPath.read(cvssMetric, "$.cvssData.scope"));
 								}
 
+								cvssMetricModel.setConfidentiality(JsonPath.read(cvssMetric, "$.cvssData.confidentialityImpact"));
+								cvssMetricModel.setIntegrity(JsonPath.read(cvssMetric, "$.cvssData.integrityImpact"));
+								cvssMetricModel.setAvailability(JsonPath.read(cvssMetric, "$.cvssData.availabilityImpact"));
+								cvssMetricModel.setExploitabilityScore(JsonPath.read(cvssMetric, "$.exploitabilityScore"));
+								cvssMetricModel.setImpactScore(JsonPath.read(cvssMetric, "$.impactScore"));
+								parsedCvssMetrics.add(cvssMetricModel);
+							} else {
+								VulnerabilityCvssMetrics cvssMetricModel = new VulnerabilityCvssMetrics();
+								cvssMetricModel.setVersion(JsonPath.read(cvssMetric, "$.cvssData.version"));
+								cvssMetricModel.setBaseScore(JsonPath.read(cvssMetric, "$.cvssData.baseScore"));
+								cvssMetricModel.setVectorString(JsonPath.read(cvssMetric, "$.cvssData.vectorString"));
+								cvssMetricModel.setBaseSeverity(JsonPath.read(cvssMetric, "$.cvssData.baseSeverity"));
+								cvssMetricModel.setAttackVector(JsonPath.read(cvssMetric, "$.cvssData.attackVector"));
+								cvssMetricModel.setAttackComplexity(JsonPath.read(cvssMetric, "$.cvssData.attackComplexity"));
+								cvssMetricModel.setPrivilegesRequired(JsonPath.read(cvssMetric, "$.cvssData.privilegesRequired"));
+								cvssMetricModel.setUserInteraction(JsonPath.read(cvssMetric, "$.cvssData.userInteraction"));
+								cvssMetricModel.setScope(JsonPath.read(cvssMetric, "$.cvssData.scope"));
 								cvssMetricModel.setConfidentiality(JsonPath.read(cvssMetric, "$.cvssData.confidentialityImpact"));
 								cvssMetricModel.setIntegrity(JsonPath.read(cvssMetric, "$.cvssData.integrityImpact"));
 								cvssMetricModel.setAvailability(JsonPath.read(cvssMetric, "$.cvssData.availabilityImpact"));

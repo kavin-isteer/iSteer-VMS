@@ -141,7 +141,7 @@ public class ApplicationServiceImpl implements ApplicationService {
 	}
 
 	private String key(String name, String version, String vendor) {
-		return name + "|" + version + "|" + vendor;
+		return name.trim().toLowerCase() + "|" + version.trim().toLowerCase() + "|" + vendor.trim().toLowerCase();
 	}
 
 	private String key(SoftwarePayloadDto dto) {

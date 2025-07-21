@@ -2,6 +2,7 @@ package com.isteer.vms.controller;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,6 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.isteer.vms.dto.ComputerPayloadDto;
 import com.isteer.vms.dto.DashboardMetricsDto;
 import com.isteer.vms.model.Computer;
+import com.isteer.vms.response.ResponseCode;
+import com.isteer.vms.response.ResponseUtil;
 import com.isteer.vms.service.ComputerService;
 
 import jakarta.validation.Valid;
@@ -33,28 +36,27 @@ public class ComputerController {
 	public ResponseEntity<?> createComputer(@Valid @RequestBody ComputerPayloadDto computer){
 		log.info("Received request to create or update computer with deviceId: {}", computer.getDeviceId());
 		int status = computerService.createOrUpdateComputer(computer);
-		System.out.println("Status code: " + status);
 		switch(status) {
 			case 0:
-				return ResponseEntity.ok("No changes made to the computer");
+				return ResponseUtil.message(ResponseCode.NO_CHANGES_MADE);
 			case 1:
-				return ResponseEntity.ok("Computer updated successfully");
+				return ResponseUtil.message(ResponseCode.COMPUTER_UPDATED);
 			case 2:
-				return ResponseEntity.ok("Computer and application updated successfully");
+				return ResponseUtil.message(ResponseCode.COMPUTER_AND_APPLICATION_UPDATED);
 			case 3:
-				return ResponseEntity.ok("Application data updated successfully.");
+				return ResponseUtil.message(ResponseCode.APPLICATION_UPDATED);
 			case 4:
-				return ResponseEntity.ok("Computer created successfully");
+				return ResponseUtil.message(ResponseCode.NEW_COMPUTER_CREATED);
 			case -1:
-				return ResponseEntity.status(400).body("Cannot update computer as it is deleted. Please restore it first.");
+				return ResponseUtil.message(ResponseCode.COMPUTER_DELETED, HttpStatus.BAD_REQUEST);
 			case -2:
-				return ResponseEntity.status(400).body("Cannot update computer as it is inactive. Please activate it first.");
+				return ResponseUtil.message(ResponseCode.COMPUTER_INACTIVE, HttpStatus.BAD_REQUEST);
 			case -3:
-				return ResponseEntity.status(400).body("Error while processing application data. Please check the input data");
+				return ResponseUtil.message(ResponseCode.APPLICATION_ERROR);
 			case -4:
-				return ResponseEntity.status(404).body("Internal error while processing request. Please try again later.");
+				return ResponseUtil.message(ResponseCode.INTERNAL_ERROR);
 			default:
-				return ResponseEntity.status(500).body("Error processing request");
+				return ResponseUtil.message(ResponseCode.DEFAULT_ERROR);
 		}
 	}
 	
