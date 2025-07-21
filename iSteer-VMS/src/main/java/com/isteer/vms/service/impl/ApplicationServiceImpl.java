@@ -15,6 +15,7 @@ import com.isteer.vms.dao.VulnerabilityDao;
 import com.isteer.vms.dto.ApplicationResponseDto;
 import com.isteer.vms.dto.SoftwarePayloadDto;
 import com.isteer.vms.model.Application;
+import com.isteer.vms.model.ApplicationCpeName;
 import com.isteer.vms.model.ComputerApplication;
 import com.isteer.vms.service.ApplicationService;
 import com.isteer.vms.service.VulnerabilityService;
@@ -198,17 +199,21 @@ public class ApplicationServiceImpl implements ApplicationService {
 	public List<ApplicationResponseDto> getApplicationDetails(String computerUuid) {
 		
 		Map<String, Map<String, Integer>> vulnerabilityCounts = vulnerabilityDao.getVulnerabilityCountsByApplication();
+		Map<String, ApplicationCpeName> cpeNames = vulnerabilityDao.getCpeNamesByComputerUuid(computerUuid);
 		
 		return applicationDao.getApplicationsByComputerUuid(computerUuid).stream()
 				.map(app -> {
 					Map<String, Integer> severityCountMap = 
 							vulnerabilityCounts.getOrDefault(app.getApplicationUuid(), Collections.emptyMap());
+					ApplicationCpeName cpeName = cpeNames.get(app.getApplicationUuid());
 					
 					return ApplicationResponseDto.builder()
 							.uuid(app.getApplicationUuid())
 							.softwareName(app.getSoftwareName())
 							.vendor(app.getVendorName())
 							.softwareVersion(app.getSoftwareVersion())
+							.cpeName(cpeName != null ? cpeName.getCpeName() : null)
+							.isResolved(cpeName != null ? cpeName.isResolvedCpe() : false)
 							.criticalVulnerabilityCount(severityCountMap.getOrDefault("CRITICAL", 0))
 							.highVulnerabilityCount(severityCountMap.getOrDefault("HIGH", 0))
 							.mediumVulnerabilityCount(severityCountMap.getOrDefault("MEDIUM", 0))

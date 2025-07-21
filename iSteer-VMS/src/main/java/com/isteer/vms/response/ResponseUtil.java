@@ -21,6 +21,6 @@ public class ResponseUtil {
 
 	public static ResponseEntity<Object> message(int code, String errorMessage, HttpStatus badRequest) {
 		BaseResponse response = new BaseResponse(code, errorMessage);
-		return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+		return new ResponseEntity<>(response, HttpStatus.valueOf(badRequest.value()));
 	}
 }
