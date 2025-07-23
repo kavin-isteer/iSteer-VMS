@@ -33,7 +33,7 @@ public class ComputerDaoImpl implements ComputerDao {
 
 	@Override
 	public List<Computer> getAllComputers() {
-		String query = "SELECT id, uuid, device_id, hostname, ip_address, os_version, antivirus_status, firewall_status, logged_in_user, last_update_check, timestamp, is_deleted, is_active, created_at, updated_at FROM computers";
+		String query = "SELECT id, uuid, device_id, hostname, ip_address, os_version, antivirus_status, firewall_status, logged_in_user, last_update_check, timestamp, is_deleted, is_active, created_at, updated_at FROM computers WHERE is_deleted = false AND is_active = true";
 		log.debug("Fetching all computers from the database");
 		try {
 			return jdbcTemplate.query(query, new ComputerRowMapper());
@@ -124,7 +124,7 @@ public class ComputerDaoImpl implements ComputerDao {
 		String query = "SELECT COUNT(DISTINCT c.uuid) FROM computers c "
 				+ "JOIN computer_applications ca ON ca.computer_uuid = c.uuid "
 				+ "JOIN application_vulnerabilities av ON av.application_uuid = ca.application_uuid "
-				+ "WHERE ca.is_deleted = false";
+				+ "WHERE ca.is_deleted = false AND c.is_deleted = false AND c.is_active = true";
 		log.debug("Fetching count of vulnerable computers from the database");
 		try {
 			return jdbcTemplate.queryForObject(query, Integer.class);
