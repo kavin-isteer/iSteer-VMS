@@ -73,7 +73,7 @@ public class ComputerController {
 	}
 	
 	@GetMapping("/computer")
-	public ResponseEntity<List<Computer>> getAllComputers(@RequestParam(required = false) String status){
+	public ResponseEntity<Object> getAllComputers(@RequestParam(required = false) String status){
 		log.info("Received request to fetch all computers.");
 		List<Computer> computers = computerService.getAllComnputers(status);
 		if(computers.isEmpty()) {
@@ -81,11 +81,11 @@ public class ComputerController {
 			return ResponseEntity.noContent().build();
 		}
 		log.info("Returning {} computers.", computers.size());
-		return ResponseEntity.ok(computers);
+		return ResponseUtil.data(computers);
 	}
 	
 	@GetMapping("/getDashboardMetrics")
-	public ResponseEntity<DashboardMetricsDto> getMetrics() {
+	public ResponseEntity<Object> getMetrics() {
 		log.info("Received request to fetch dashboard metrics.");
 		DashboardMetricsDto metrics = computerService.getDashboardMetrics();
 		if(metrics == null) {
@@ -93,7 +93,7 @@ public class ComputerController {
 			return ResponseEntity.noContent().build();
 		} else {
 			log.info("Returning dashboard metrics");
-			return ResponseEntity.ok(metrics);
+			return ResponseUtil.data(metrics);
 		}
 	}
 	
