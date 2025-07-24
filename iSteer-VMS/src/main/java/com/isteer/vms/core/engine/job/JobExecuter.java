@@ -70,7 +70,7 @@ public class JobExecuter {
 	}
 	
 	// Scheduled method to execute the job every 3 days at midnight (00:00)
-    @Scheduled(cron = "0 36 15 * * *")
+    @Scheduled(cron = "0 0 1 * * MON")
     public void scheduleJob() {
         log.info("[SCHEDULED JOB] Starting scheduled job ........");
         startupdateCpeDictionaryJob();  // Trigger the job
