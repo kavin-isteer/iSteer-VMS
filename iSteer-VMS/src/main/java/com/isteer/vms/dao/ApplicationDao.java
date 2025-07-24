@@ -1,6 +1,7 @@
 package com.isteer.vms.dao;
 
 import java.util.List;
+import java.util.Map;
 
 import com.isteer.vms.model.Application;
 import com.isteer.vms.model.ComputerApplication;
@@ -18,5 +19,7 @@ public interface ApplicationDao {
 	int insertComputerApplications(List<ComputerApplication> computerApplications);
 
 	int deleteOrActivateComputerApplications(List<ComputerApplication> computerApplications);
+
+	Map<String, Integer> getInstalledVulnerableAppCounts();
 
 }

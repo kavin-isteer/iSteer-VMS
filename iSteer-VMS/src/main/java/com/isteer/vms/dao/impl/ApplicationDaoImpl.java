@@ -1,6 +1,8 @@
 package com.isteer.vms.dao.impl;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -71,7 +73,7 @@ public class ApplicationDaoImpl implements ApplicationDao {
 		logger.debug("Fetching applications for computer UUID: {}", computerUuid);
 		String query = "SELECT ca.uuid, ca.application_uuid, ca.computer_uuid, a.name, a.version, a.vendor_name, ca.installed_date, ca.is_deleted, ca.created_at, ca.updated_at "
 				+ "FROM computer_applications ca " + "JOIN applications a ON ca.application_uuid = a.uuid "
-				+ "WHERE ca.computer_uuid = :computerUuid";
+				+ "WHERE ca.computer_uuid = :computerUuid AND ca.is_deleted = false";
 		MapSqlParameterSource params = new MapSqlParameterSource();
 		params.addValue("computerUuid", computerUuid);
 		try {
@@ -143,6 +145,32 @@ public class ApplicationDaoImpl implements ApplicationDao {
 			}
 		}
 		return 1;
+	}
+
+	@Override
+	public Map<String, Integer> getInstalledVulnerableAppCounts() {
+		String query = "select v.severity, COUNT(distinct av.application_uuid) as app_count from `cvss-application-datastore`.computers c "
+				+ "join `cvss-application-datastore`.computer_applications ca on ca.computer_uuid = c.uuid "
+				+ "join `cvss-application-datastore`.application_vulnerabilities av  on av.application_uuid = ca.application_uuid "
+				+ "join `cvss-application-datastore`.vulnerabilities v on v.uuid = av.vulnerability_uuid "
+				+ "where c.is_active = true and c.is_deleted = false "
+				+ "and ca.is_deleted = false "
+				+ "group by v.severity "
+				+ "order by v.severity";
+		try {
+			return jdbcTemplate.query(query, rs -> {
+				Map<String, Integer> result = new HashMap<>();
+				while(rs.next()) {
+					String computerUuid = rs.getString("severity");
+					Integer appCount = rs.getInt("app_count");
+					result.put(computerUuid, appCount);
+				}
+				return result;
+			});
+		} catch (Exception e) {
+			// TODO: handle exception
+			return Map.of();
+		}
 	}
 
 }

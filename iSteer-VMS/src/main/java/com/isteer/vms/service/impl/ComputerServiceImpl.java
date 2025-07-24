@@ -11,6 +11,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.isteer.vms.dao.ApplicationDao;
 import com.isteer.vms.dao.ComputerDao;
 import com.isteer.vms.dao.VulnerabilityDao;
 import com.isteer.vms.dto.ComputerPayloadDto;
@@ -29,13 +30,15 @@ public class ComputerServiceImpl implements ComputerService {
 	private ComputerDao computerDao;
 	private ApplicationService applicationService;
 	private VulnerabilityDao vulnerabilityDao;
+	private ApplicationDao applicationDao;
 
 	public ComputerServiceImpl(ComputerDao computerDao, ApplicationService applicationService,
-			VulnerabilityDao vulnerabilityDao) {
+			VulnerabilityDao vulnerabilityDao, ApplicationDao applicationDao) {
 		super();
 		this.computerDao = computerDao;
 		this.applicationService = applicationService;
 		this.vulnerabilityDao = vulnerabilityDao;
+		this.applicationDao = applicationDao;
 	}
 
 	@Override
@@ -148,8 +151,14 @@ public class ComputerServiceImpl implements ComputerService {
 	@Override
 	public DashboardMetricsDto getDashboardMetrics() {
 		log.info("Loading Dashboard Metrics");
+		Map<String, Integer> installedVulnerableAppCounts = applicationDao.getInstalledVulnerableAppCounts();
 		return DashboardMetricsDto.builder().totalComputers(computerDao.getTotalComputersCount())
-				.vulnerableComputers(computerDao.getVulnerableComputersCount()).computerDetails(getComputerDetails())
+				.vulnerableComputers(computerDao.getVulnerableComputersCount())
+				.totalCriticalVulnerableApplications(installedVulnerableAppCounts.getOrDefault("CRITICAL", 0))
+				.totalHighVulnerableApplications(installedVulnerableAppCounts.getOrDefault("HIGH", 0))
+				.totalMediumVulnerableApplications(installedVulnerableAppCounts.getOrDefault("MEDIUM", 0))
+				.totalLowVulnerableApplications(installedVulnerableAppCounts.getOrDefault("LOW", 0))
+				.computerDetails(getComputerDetails())
 				.build();
 	}
 
@@ -168,10 +177,10 @@ public class ComputerServiceImpl implements ComputerService {
 					.firewallStatus(computer.getFirewallStatus()).loggedInUser(computer.getLoggedinUser())
 					.installedSoftwareCount(installedAppCounts.getOrDefault(computer.getUuid(), 0))
 					.vulnerableSoftwareCount(vulnerableAppCounts.getOrDefault(computer.getUuid(), 0))
-					.criticalVulnerabilityCount(severityCountMap.getOrDefault("CRITICAL", 0))
-					.highVulnerabilityCount(severityCountMap.getOrDefault("HIGH", 0))
-					.mediumVulnerabilityCount(severityCountMap.getOrDefault("MEDIUM", 0))
-					.lowVulnerabilityCount(severityCountMap.getOrDefault("LOW", 0))
+					.criticalVulnerableApplicationCount(severityCountMap.getOrDefault("CRITICAL", 0))
+					.highVulnerableApplicationCount(severityCountMap.getOrDefault("HIGH", 0))
+					.mediumVulnerableApplicationCount(severityCountMap.getOrDefault("MEDIUM", 0))
+					.lowVulnerableApplicationCount(severityCountMap.getOrDefault("LOW", 0))
 					.applicationDetails(applicationService.getApplicationDetails(computer.getUuid())).build();
 		}).toList();
 	}
