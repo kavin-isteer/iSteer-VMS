@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import com.isteer.vms.core.engine.dao.CPEEntriesDao;
 import com.isteer.vms.core.engine.dao.CpeHintDao;
 import com.isteer.vms.core.engine.enums.CpeField;
 import com.isteer.vms.core.engine.enums.EvidenceType;
@@ -31,11 +32,13 @@ public class Engine {
 	private CpeHintDao cpeHintDao;
 	private NvdClient nvdClient;
 	private static LuceneIndexRunner luceneIndexRunner;
+	private static CPEEntriesDao cpeEntriesDao;
 
-	public Engine(CpeHintDao cpeHintDao, NvdClient nvdClient,LuceneIndexRunner luceneIndexRnr) {
+	public Engine(CpeHintDao cpeHintDao, NvdClient nvdClient,LuceneIndexRunner luceneIndexRnr, CPEEntriesDao cpeEntriesDAO) {
 		this.cpeHintDao = cpeHintDao;
 		this.nvdClient = nvdClient;
 		luceneIndexRunner = luceneIndexRnr;
+		cpeEntriesDao = cpeEntriesDAO;
 	}
 
 	public Map<String, BaseApplication> collectEvidencesAndFetchVulnerabilities(List<Application> applications) {
@@ -119,11 +122,28 @@ public class Engine {
 				luceneIndexRunner.createIndexFromCvssDb();
 			}else {
 				log.info("Lucene index found...!!");
+				if(!checkLuceneIndexCountWithDb()) {
+					log.info("Lucene index count does not match with DB count. Rebuilding index...");
+					luceneIndexRunner.createIndexFromCvssDb();
+					checkLuceneIndexCountWithDb();
+				}
 			}
 		} catch (IOException e) {
 			log.error("IO Exception occured during creating lucene index for CPE Entries!!");
 		} catch (SQLException e) {
 			log.error("SQL exception occured while fetcihng CPE entries from DB!!");
 		}
+	}
+	
+	public static boolean checkLuceneIndexCountWithDb() throws IOException {
+		log.info("Checking Lucene index count with DB count...");
+		int luceneDocCount = luceneIndexRunner.getTotalLuceneDocuments();
+		int dbCount = cpeEntriesDao.getTotalCpeEntriesCount();
+		if(luceneDocCount!=dbCount) {
+			log.info("Lucene index count not matches DB count. Lucene: {}, DB: {}", luceneDocCount, dbCount);
+			return false;
+		}
+		log.info("Lucene index count matches DB count. Lucene: {}, DB: {}", luceneDocCount, dbCount);
+		return true;
 	}
 }

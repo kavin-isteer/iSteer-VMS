@@ -137,6 +137,20 @@ public class CPEEntriesDao {
 			return Collections.emptyList();
 		}
 	}
+	/**
+	 * Retrieves the total count of CPE entries in the cpe_dictionary table.
+	 *
+	 * @return Total number of CPE entries
+	 */
+	public int getTotalCpeEntriesCount() {
+		String sql = "SELECT COUNT(*) FROM cpe_dictionary";
+		try {
+			return jdbcTemplate.queryForObject(sql, Integer.class);
+		} catch (DataAccessException e) {
+			log.error("Failed to fetch total CPE entries count", e);
+			return 0;
+		}
+	}
 
 	/**
 	 * RowMapper implementation for mapping ResultSet rows to CpeEntry objects.

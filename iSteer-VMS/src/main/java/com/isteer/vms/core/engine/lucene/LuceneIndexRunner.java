@@ -1,9 +1,13 @@
 package com.isteer.vms.core.engine.lucene;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.List;
 
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.store.FSDirectory;
 import org.springframework.stereotype.Service;
 
 import com.isteer.vms.core.engine.dao.CPEEntriesDao;
@@ -16,7 +20,7 @@ import lombok.extern.log4j.Log4j2;
 public class LuceneIndexRunner {
 
 	private CPEEntriesDao cpeEntriesDao;
-	
+	private static final String INDEX_DIR = "lucene-index";
 	public LuceneIndexRunner(CPEEntriesDao cpeEntriesDao) {
 		this.cpeEntriesDao = cpeEntriesDao;
 	}
@@ -45,5 +49,16 @@ public class LuceneIndexRunner {
 		}
 		indexer.close(); // close once at the end
 		log.info("Indexing complete. Total records indexed: " + totalIndexed);
+	}
+	
+	public int getTotalLuceneDocuments() throws IOException {
+		 // Open the index directory
+        FSDirectory directory = FSDirectory.open(Paths.get(INDEX_DIR));
+
+        // Create a DirectoryReader
+        try(IndexReader reader = DirectoryReader.open(directory);){
+        	// Get the number of documents in the index
+            return reader.numDocs();	
+        }
 	}
 }

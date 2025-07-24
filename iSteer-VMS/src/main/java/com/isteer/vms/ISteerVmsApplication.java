@@ -3,12 +3,14 @@ package com.isteer.vms;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import com.isteer.vms.core.engine.Engine;
 
 @SpringBootApplication
+@EnableScheduling
 public class ISteerVmsApplication implements CommandLineRunner{
-
+	
 	public static void main(String[] args) {
 		SpringApplication.run(ISteerVmsApplication.class, args);
 	}
