@@ -149,10 +149,10 @@ public class ApplicationDaoImpl implements ApplicationDao {
 
 	@Override
 	public Map<String, Integer> getInstalledVulnerableAppCounts() {
-		String query = "select v.severity, COUNT(distinct av.application_uuid) as app_count from `cvss-application-datastore`.computers c "
-				+ "join `cvss-application-datastore`.computer_applications ca on ca.computer_uuid = c.uuid "
-				+ "join `cvss-application-datastore`.application_vulnerabilities av  on av.application_uuid = ca.application_uuid "
-				+ "join `cvss-application-datastore`.vulnerabilities v on v.uuid = av.vulnerability_uuid "
+		String query = "select v.severity, COUNT(distinct av.application_uuid) as app_count from computers c "
+				+ "join computer_applications ca on ca.computer_uuid = c.uuid "
+				+ "join application_vulnerabilities av  on av.application_uuid = ca.application_uuid "
+				+ "join vulnerabilities v on v.uuid = av.vulnerability_uuid "
 				+ "where c.is_active = true and c.is_deleted = false "
 				+ "and ca.is_deleted = false "
 				+ "group by v.severity "
