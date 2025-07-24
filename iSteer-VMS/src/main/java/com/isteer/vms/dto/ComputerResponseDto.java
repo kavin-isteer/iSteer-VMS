@@ -26,13 +26,13 @@ public class ComputerResponseDto {
 	@Builder.Default
 	private int vulnerableSoftwareCount = 0;
 	@Builder.Default
-	private int criticalVulnerabilityCount = 0;
+	private int criticalVulnerableApplicationCount = 0;
 	@Builder.Default
-	private int highVulnerabilityCount = 0;
+	private int highVulnerableApplicationCount = 0;
 	@Builder.Default
-	private int mediumVulnerabilityCount = 0;
+	private int mediumVulnerableApplicationCount = 0;
 	@Builder.Default
-	private int lowVulnerabilityCount = 0;
+	private int lowVulnerableApplicationCount = 0;
 	private List<ApplicationResponseDto> applicationDetails;
 
 }

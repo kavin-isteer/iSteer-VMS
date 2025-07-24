@@ -17,6 +17,14 @@ public class DashboardMetricsDto {
 	private int totalComputers = 0;
 	@Builder.Default
 	private int vulnerableComputers = 0;
+	@Builder.Default
+	private int totalCriticalVulnerableApplications = 0;
+	@Builder.Default
+	private int totalHighVulnerableApplications = 0;
+	@Builder.Default
+	private int totalMediumVulnerableApplications = 0;
+	@Builder.Default
+	private int totalLowVulnerableApplications = 0;
 	private List<ComputerResponseDto> computerDetails;
 
 }
