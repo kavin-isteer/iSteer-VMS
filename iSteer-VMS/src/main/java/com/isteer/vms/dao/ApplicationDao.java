@@ -22,4 +22,6 @@ public interface ApplicationDao {
 
 	Map<String, Integer> getInstalledVulnerableAppCounts();
 
+	List<Application> getUnresolvedApplications();
+
 }

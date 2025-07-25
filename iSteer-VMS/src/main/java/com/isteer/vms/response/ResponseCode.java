@@ -7,6 +7,8 @@ public enum ResponseCode {
 	APPLICATION_UPDATED(1003, "Application data updated successfully"),
 	NO_CHANGES_MADE(1004, "No changes made to the computer"),
 	COMPUTER_AND_APPLICATION_UPDATED(1005, "Computer and application updated successfully"),
+	NO_DATA_FOUND(1006, "No data found for the given request"),
+	
 	COMPUTER_DELETED(9001, "Cannot update computer as it is deleted. Please restore it first."),
 	COMPUTER_INACTIVE(9002, "Cannot update computer as it is inactive. Please activate it first."),
 	APPLICATION_ERROR(9003, "Error while processing application data. Please check the input data"),
