@@ -173,4 +173,20 @@ public class ApplicationDaoImpl implements ApplicationDao {
 		}
 	}
 
+	@Override
+	public List<Application> getUnresolvedApplications() {
+		logger.info("Fetching unresolved applications from the database");
+		String query = "select a.id, a.uuid, a.name, a.vendor_name, a.version from applications a "
+				+ "join application_cpe_name_details acnd "
+				+ "on acnd.application_uuid = a.uuid "
+				+ "where acnd.is_resolved_cpe = false";
+		
+		try {
+			return jdbcTemplate.query(query, new ApplicationRowMapper());
+		} catch (Exception e) {
+			logger.error("Error fetching unresolved applications: {}", e.getMessage());
+			return List.of();
+		}
+	}
+
 }

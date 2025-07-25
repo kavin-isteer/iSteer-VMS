@@ -14,4 +14,6 @@ public interface ApplicationService {
 	
 	List<ApplicationResponseDto> getApplicationDetails(String computerUuid);
 
+	List<Application> getUnresolvedApplications();
+
 }

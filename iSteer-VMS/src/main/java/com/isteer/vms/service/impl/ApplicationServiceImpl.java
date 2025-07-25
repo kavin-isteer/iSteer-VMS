@@ -142,7 +142,10 @@ public class ApplicationServiceImpl implements ApplicationService {
 	}
 
 	private String key(String name, String version, String vendor) {
-		return name.trim().toLowerCase() + "|" + version.trim().toLowerCase() + "|" + vendor.trim().toLowerCase();
+		String safeName = name != null ? name.trim().toLowerCase() : "";
+		String safeVersion = version != null ? version.trim().toLowerCase() : "";
+		String safeVendor = vendor != null ? vendor.trim().toLowerCase() : "";
+		return safeName + "|" + safeVersion + "|" + safeVendor;
 	}
 
 	private String key(SoftwarePayloadDto dto) {
@@ -222,5 +225,11 @@ public class ApplicationServiceImpl implements ApplicationService {
 							.build();
 				}).toList();
 		
+	}
+
+	@Override
+	public List<Application> getUnresolvedApplications() {
+		log.debug("Fetching unresolved applications");
+		return applicationDao.getUnresolvedApplications();
 	}
 }
