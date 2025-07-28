@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -15,8 +14,12 @@ import lombok.extern.log4j.Log4j2;
 @Component
 @Log4j2
 public class JobExecuter {
-	@Autowired
+	
 	private NVDDataProcessor nvdDataProcessor;
+	
+	public JobExecuter(NVDDataProcessor nvdDataProcessor) {
+		this.nvdDataProcessor = nvdDataProcessor;
+	}
 
 	// A map to store the status of jobs based on the job ID
 	private final Map<String, String> jobStatusMap = new HashMap<>();

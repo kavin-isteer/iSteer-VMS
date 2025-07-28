@@ -16,7 +16,6 @@ import java.util.zip.ZipInputStream;
 
 import javax.sql.DataSource;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -29,10 +28,14 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public class NVDDataProcessor {
 
-    @Autowired
-    DataSource datasource;
+    private DataSource datasource;
+    
 
-    @Value("${nvd.api.key}")
+    public NVDDataProcessor(DataSource datasource) {
+		this.datasource = datasource;
+	}
+
+	@Value("${nvd.api.key}")
     private String NVD_API_KEY;
 
     private static final String DOWNLOAD_URL = "https://nvd.nist.gov/feeds/json/cpe/2.0/nvdcpe-2.0.zip";
