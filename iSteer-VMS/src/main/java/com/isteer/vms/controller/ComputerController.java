@@ -119,6 +119,7 @@ public class ComputerController {
 		switch (status) {
 		case 1: {
 			statusMessage = "Hint added Successfully!!";
+			vulnerabilityService.analyzeAndSaveApplicationVulnerabilitiesAsync(List.of(application));
 			break;
 		}
 		case -1: {

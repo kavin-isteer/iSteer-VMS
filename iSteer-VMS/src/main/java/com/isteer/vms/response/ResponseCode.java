@@ -13,7 +13,8 @@ public enum ResponseCode {
 	COMPUTER_INACTIVE(9002, "Cannot update computer as it is inactive. Please activate it first."),
 	APPLICATION_ERROR(9003, "Error while processing application data. Please check the input data"),
 	DEFAULT_ERROR(9004, "Cannot process request. Please try again later."),
-	METHOD_ARGUMENT_NOT_VALID(1005, "Invalid input data. Please check the data and try again."),
+	METHOD_ARGUMENT_NOT_VALID(9005, "Invalid input data. Please check the data and try again."),
+	SEARCH_TYPE_MISSING(9006, "Search type is missing or empty. Please provide a valid search type."),
 	INTERNAL_ERROR(9999, "Internal server error. Please try again later.");
 	
 	private final int code;

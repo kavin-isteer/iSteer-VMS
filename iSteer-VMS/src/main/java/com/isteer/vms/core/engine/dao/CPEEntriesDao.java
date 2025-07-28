@@ -32,11 +32,12 @@ public class CPEEntriesDao {
 	 * @return List of unique vendor names
 	 */
 	public List<String> getDistinctVendorsList() {
+		log.info("Fetching distinct vendors from cpe_dictionary...");
 		String sql = "SELECT DISTINCT(vendor) FROM cpe_dictionary";
 		try {
 			return jdbcTemplate.query(sql, (rs, rowNum) -> rs.getString("vendor"));
 		} catch (DataAccessException e) {
-			log.error("Failed to fetch distinct vendors list", e);
+			log.error("Failed to fetch distinct vendors list with error message: {}", e.getMessage());
 			return Collections.emptyList();
 		}
 	}
@@ -50,6 +51,7 @@ public class CPEEntriesDao {
 	 */
 	public List<CpeEntry> getCpeEntriesForVendor(Set<String> vendors) {
 		if (vendors == null || vendors.isEmpty()) {
+			log.warn("No vendors provided for fetching CPE entries. Returning empty list.");
 			return Collections.emptyList();
 		}
 
@@ -78,10 +80,11 @@ public class CPEEntriesDao {
 			String sql = "SELECT id, cpe_name, cpe_title, vendor, product, version, update_date, deprecated "
 					+ "FROM cpe_dictionary c " + "JOIN temp_vendors v ON c.vendor = v.vendors";
 
+			log.info("Fetching CPE entries for {} vendors.", vendors.size());
 			return jdbcTemplate.query(sql, new CpeEntryRowMapper());
 
 		} catch (DataAccessException e) {
-			log.error("Failed to fetch CPE entries for vendors", e);
+			log.error("Failed to fetch CPE entries for vendors with error message: {}", e.getMessage());
 			return Collections.emptyList();
 		}
 	}
@@ -92,12 +95,13 @@ public class CPEEntriesDao {
 	 * @return List of all CpeEntry records
 	 */
 	public List<CpeEntry> getAllCpeEntries() {
+		log.info("Fetching all CPE entries from cpe_dictionary...");
 		String sql = "SELECT id, cpe_name, cpe_title, vendor, product, version, update_date, deprecated "
 				+ "FROM cpe_dictionary";
 		try {
 			return jdbcTemplate.query(sql, new CpeEntryRowMapper());
 		} catch (DataAccessException e) {
-			log.error("Failed to fetch all CPE entries", e);
+			log.error("Failed to fetch all CPE entries with error message: {}", e.getMessage());
 			return Collections.emptyList();
 		}
 	}
@@ -110,12 +114,13 @@ public class CPEEntriesDao {
 	 * @return List of CpeEntry records with ID > lastId
 	 */
 	public List<CpeEntry> getCpeEntries(int lastId) {
+		log.info("Fetching CPE entries with ID greater than {}", lastId);
 		String sql = "SELECT id, cpe_name, cpe_title, vendor, product, version, update_date, deprecated "
 				+ "FROM cpe_dictionary WHERE id > ? ORDER BY id LIMIT 100000";
 		try {
 			return jdbcTemplate.query(sql, new CpeEntryRowMapper(), lastId);
 		} catch (DataAccessException e) {
-			log.error("Failed to fetch CPE entries after ID: {}", lastId, e);
+			log.error("Failed to fetch CPE entries after ID: {}, with error message: {}", lastId, e.getMessage());
 			return Collections.emptyList();
 		}
 	}
@@ -128,12 +133,13 @@ public class CPEEntriesDao {
 	 * @return Paginated list of CpeEntry objects
 	 */
 	public List<CpeEntry> getAllCpeEntriesWithOffset(int offset, int limit) {
+		log.info("Fetching CPE entries with offset= {} and limit={}", offset, limit);
 		String sql = "SELECT id, cpe_name, cpe_title, vendor, product, version, update_date, deprecated "
 				+ "FROM cpe_dictionary ORDER BY id LIMIT ? OFFSET ?";
 		try {
 			return jdbcTemplate.query(sql, new CpeEntryRowMapper(), limit, offset);
 		} catch (DataAccessException e) {
-			log.error("Failed to fetch CPE entries with offset={} and limit={}", offset, limit, e);
+			log.error("Failed to fetch CPE entries with offset={} and limit={} with error message: {}", offset, limit, e.getMessage());
 			return Collections.emptyList();
 		}
 	}
@@ -143,11 +149,12 @@ public class CPEEntriesDao {
 	 * @return Total number of CPE entries
 	 */
 	public int getTotalCpeEntriesCount() {
+		log.info("Fetching total count of CPE entries from cpe_dictionary...");
 		String sql = "SELECT COUNT(*) FROM cpe_dictionary";
 		try {
 			return jdbcTemplate.queryForObject(sql, Integer.class);
 		} catch (DataAccessException e) {
-			log.error("Failed to fetch total CPE entries count", e);
+			log.error("Failed to fetch total CPE entries count with error message: {}", e.getMessage());
 			return 0;
 		}
 	}

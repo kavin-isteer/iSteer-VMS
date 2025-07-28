@@ -16,6 +16,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -47,6 +48,7 @@ public class NvdClient {
 	}
 
 	private static final String CVE_BASE_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0";
+	private static final String CPE_BASE_URL = "https://services.nvd.nist.gov/rest/json/cpes/2.0";
 	@Value("${nvd.api.key}")
 	private String apiKey;
 	
@@ -61,31 +63,31 @@ public class NvdClient {
      * @return The updated dependency model with vulnerabilities, if any.
      */
 	public BaseApplication fetchVulnerabilitiesForDependency(BaseApplication application) {
+		log.info("Fetching vulnerabilities for application: {}", application.getApplication().getSoftwareName());
 		String cveUrl = null;
 		if (application == null || application.getCpeEnumeration() == null) {
 			// No dependency or CPE info available; return as is or null
+			log.warn("Application or CPE enumeration is null for application: {}", application.getApplication().getSoftwareName());
 			return application;
 		}
 
 		CpeName cpeNameModel = application.getCpeEnumeration();
 		String cpeName = cpeNameModel.getCPE23Uri();
 		if (cpeName == null || cpeName.isEmpty()) {
+			log.warn("CPE name is null or empty for application: {}", application.getApplication().getSoftwareName());
 			return application;
 		}
 
 		Object cveApiResponse = null;
 
-		HttpHeaders headers = new HttpHeaders();
-		headers.set("apiKey", apiKey);
-		HttpEntity<String> entity = new HttpEntity<>(headers);
-
 		try {
 			String encodedCpe = URLEncoder.encode(cpeName, StandardCharsets.UTF_8.toString());
 			cveUrl = String.format("%s?cpeName=%s", CVE_BASE_URL, encodedCpe);
-			log.info("Url for fetching CVE: {}", cveUrl);
+			log.debug("Url for fetching CVE for application {}: {}", application.getApplication().getSoftwareName(), cveUrl);
 			URI uri = new URI(cveUrl);
-			ResponseEntity<Object> cveResponse = restTemplate.exchange(uri, HttpMethod.GET, entity, Object.class);
+			ResponseEntity<Object> cveResponse = restTemplate.exchange(uri, HttpMethod.GET, getHeaders(), Object.class);
 			if (cveResponse.getBody() != null && cveResponse.getStatusCode().is2xxSuccessful()) {
+				log.debug("Got successful response from NVD API for application: {}", application.getApplication().getSoftwareName());
 				cveApiResponse = cveResponse.getBody();
 				if (cveApiResponse != null) {
 					VulnerabilitiesForCpeName parsedVulnerability = new VulnerabilitiesForCpeName();
@@ -95,22 +97,152 @@ public class NvdClient {
 					}
 					application.getCpeEnumeration().setValidCpe(true);
 				} else {
-					log.error("Error for this url: {}.", cveUrl);
-					throw new NvdApiException("CVE API failed", cveResponse.getStatusCode().value());
+					log.warn("No vulnerabilities found for CPE: {}", cpeName);
 				}
 			}
 		} catch (RestClientException e) {
-			log.error("Error for this url: {}. Application: {}", cveUrl, application.getApplication());
+			log.error("Error fetching CVE data from NVD API for CPE name: {}, with error message: {}", cpeName, e.getMessage());
 			throw new NvdApiException("CVE API error: " + e.getMessage(), 500);
 		} catch (UnsupportedEncodingException e) {
+			log.error("Error encoding CPE name: {}, with error message: {}", cpeName, e.getMessage());
 			throw new NvdApiException("CVE Encoding error: " + e.getMessage(), 400);
 		} catch (URISyntaxException e) {
+			log.error("Error creating URI for CPE name: {}, with error message: {}", cpeName, e.getMessage());
 			throw new NvdApiException("CVE URI error: " + e.getMessage(), 400);
 		}
 
-		log.info("Fetched vulnerabilities for CPE: {}", application);
+		log.info("Completed fetching vulnerabilities for application: {}", application.getApplication().getSoftwareName());
 		return application;
 	}
+	
+	 /**
+     * Fetches vulnerability details for a given CVE ID.
+     *
+     * @param cveId The CVE ID to search for (e.g., "CVE-2021-44228")
+     * @return Parsed CVE data for the given CVE ID.
+     * @throws NvdApiException if the API call fails or returns an error.
+     */
+    public List<Vulnerability> getVulnerabilitiesByCveId(String cveId) throws NvdApiException {
+        try {
+            String url = String.format("%s?cveId=%s", CVE_BASE_URL, cveId);
+            ResponseEntity<Object> response = restTemplate.exchange(url, HttpMethod.GET, getHeaders(), Object.class);
+
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new NvdApiException("NVD API returned non-success status", response.getStatusCode().value());
+            }
+            log.info("Successfully fetched CVE data for ID: {}", cveId);
+            return parseCveApiResponse(response.getBody());
+
+        } catch (HttpStatusCodeException ex) {
+            throw new NvdApiException(ex.getResponseBodyAsString(), ex.getStatusCode().value());
+        } catch (Exception ex) {
+            throw new NvdApiException(ex.getMessage(), 500);
+        }
+    }
+	
+	 /**
+     * Searches for CVE vulnerabilities using a keyword (e.g., product name or version).
+     *
+     * @param keywords The search keyword(s).
+     * @return Parsed CVE data matching the keywords.
+     * @throws NvdApiException if the API call fails or returns an error.
+     */
+    public List<Vulnerability> getVulnerabilitiesByKeywords(String keywords) throws NvdApiException {
+        try {
+            String url = String.format("%s?keywordSearch=%s", CVE_BASE_URL, keywords);
+            ResponseEntity<Object> response = restTemplate.exchange(url, HttpMethod.GET, getHeaders(), Object.class);
+
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new NvdApiException("NVD API returned non-success status", response.getStatusCode().value());
+            }
+            log.info("Successfully fetched CVE data for keyword: {}", keywords);
+            return parseCveApiResponse(response.getBody());
+
+        } catch (HttpStatusCodeException ex) {
+            throw new NvdApiException(ex.getResponseBodyAsString(), ex.getStatusCode().value());
+        } catch (Exception ex) {
+            throw new NvdApiException(ex.getMessage(), 500);
+        }
+    }
+    
+    /**
+     * Retrieves vulnerabilities based on a specific CPE name.
+     *
+     * @param cpe The full CPE name (e.g., "cpe:2.3:a:apache:log4j:2.14.1").
+     * @return Parsed CVE data for the specified CPE.
+     * @throws NvdApiException if the API call fails or returns an error.
+     */
+    public List<Vulnerability> getVulnerabilitiesByCpe(String cpe) throws NvdApiException {
+        try {
+            String encodedCpe = URLEncoder.encode(cpe, StandardCharsets.UTF_8.toString());
+            String url = String.format("%s?cpeName=%s", CVE_BASE_URL, encodedCpe);
+            URI uri = new URI(url);
+            ResponseEntity<Object> response = restTemplate.exchange(uri, HttpMethod.GET, getHeaders(), Object.class);
+
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new NvdApiException("NVD API returned non-success status", response.getStatusCode().value());
+            }
+            log.info("Successfully fetched CVE data for CPE: {}", cpe);
+            return parseCveApiResponse(response.getBody());
+
+        } catch (HttpStatusCodeException ex) {
+            throw new NvdApiException(ex.getResponseBodyAsString(), ex.getStatusCode().value());
+        } catch (Exception ex) {
+            throw new NvdApiException(ex.getMessage(), 500);
+        }
+    }
+    
+    /**
+     * Retrieves a list of CPE names that match the given string.
+     *
+     * @param cpeName A partial or full CPE name string.
+     * @return Parsed list of matching CPE names.
+     * @throws NvdApiException if the API call fails or returns an error.
+     */
+    public List<CpeName> getCpeNameList(String cpeName) throws NvdApiException {
+        try {
+            String encodedCpe = URLEncoder.encode(cpeName, StandardCharsets.UTF_8.toString());
+            String url = String.format("%s?cpeMatchString=%s", CPE_BASE_URL, encodedCpe);
+            URI uri = new URI(url);
+            ResponseEntity<Object> response = restTemplate.exchange(uri, HttpMethod.GET, getHeaders(), Object.class);
+
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new NvdApiException("NVD API returned non-success status", response.getStatusCode().value());
+            }
+            log.info("Successfully fetched CPE names for match string: {}", cpeName);
+            return parseCpeApiResponse(response.getBody());
+
+        } catch (HttpStatusCodeException ex) {
+            throw new NvdApiException(ex.getResponseBodyAsString(), ex.getStatusCode().value());
+        } catch (Exception ex) {
+            throw new NvdApiException(ex.getMessage(), 500);
+        }
+    }
+    
+    /**
+     * Retrieves a list of CPE names based on a keyword search.
+     *
+     * @param keywords The keyword to search CPEs (e.g., "log4j").
+     * @return Parsed list of matching CPE names.
+     * @throws NvdApiException if the API call fails or returns an error.
+     */
+    public List<CpeName> getCpeNameListByKeywords(String keywords) throws NvdApiException {
+        try {
+            String url = String.format("%s?keywordSearch=%s", CPE_BASE_URL, keywords);
+            ResponseEntity<Object> response = restTemplate.exchange(url, HttpMethod.GET, getHeaders(), Object.class);
+
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new NvdApiException("NVD API returned non-success status", response.getStatusCode().value());
+            }
+            log.info("Successfully  fetched CPE names for keyword: {}", keywords);
+            return parseCpeApiResponse(response.getBody());
+
+        } catch (HttpStatusCodeException ex) {
+            throw new NvdApiException(ex.getResponseBodyAsString(), ex.getStatusCode().value());
+        } catch (Exception ex) {
+            throw new NvdApiException(ex.getMessage(), 500);
+        }
+    }
 	
 	/**
      * Parses the CPE API response and converts it into a list of {@link CPENameModel}.
@@ -119,6 +251,7 @@ public class NvdClient {
      * @return A list of CPE name models.
      */
 	public List<CpeName> parseCpeApiResponse(Object cpeApiResponse) {
+		log.debug("Parsing CPE API response to extract CPE names");
 		List<CpeName> cpeNames = new ArrayList<>();
 		ObjectMapper objectMapper = new ObjectMapper();
 
@@ -143,8 +276,9 @@ public class NvdClient {
 				}
 			}
 		} catch (Exception e) {
-			log.error("Error parsing CPE API response: " + e.getMessage());
+			log.error("Error parsing CPE API response: {}", e.getMessage());
 		}
+		log.debug("Parsed {} CPE names from API response.", cpeNames.size());
 		return cpeNames;
 	}
 	
@@ -155,6 +289,7 @@ public class NvdClient {
      * @return A list of vulnerability detail models.
      */
 	public List<Vulnerability> parseCveApiResponse(Object cveApiResponse) {
+		log.debug("Parsing CVE API response to extract vulnerability details...");
 		List<Vulnerability> vulnerabilityDetails = new ArrayList<>();
 		ObjectMapper objectMapper = new ObjectMapper();
 
@@ -188,8 +323,9 @@ public class NvdClient {
 				}
 			}
 		} catch (Exception e) {
-			log.error("Error parsing CVE API response: " + e.getMessage());
+			log.error("Error parsing CVE API response: {}", e.getMessage());
 		}
+		log.debug("Parsed {} vulnerability details from API response.", vulnerabilityDetails.size());
 		return vulnerabilityDetails;
 	}
 	
@@ -200,6 +336,7 @@ public class NvdClient {
      * @return A list of parsed CVSS metric models.
      */
 	private List<VulnerabilityCvssMetrics> processCvssMetrics(Map<String, Object> metricMap) {
+		log.debug("Processing CVSS metrics from the CVE API response...");
 		String[] metricTypes = { "cvssMetricV31", "cvssMetricV4", "cvssMetricV2" };
 		List<VulnerabilityCvssMetrics> parsedCvssMetrics = new ArrayList<>();
 		try {
@@ -258,8 +395,9 @@ public class NvdClient {
 				}
 			}
 		} catch (Exception e) {
-			log.error("Error processing CVSS metrics: " + e.getMessage());
+			log.error("Error processing CVSS metrics: {}", e.getMessage());
 		}
+		log.debug("Processed {} CVSS metrics from API response.", parsedCvssMetrics.size());
 		return parsedCvssMetrics;
 	}
 	
@@ -333,4 +471,12 @@ public class NvdClient {
 
 		return mitigationReferences;
 	}
+	
+	private HttpEntity<String> getHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("apiKey", apiKey);
+        return new HttpEntity<>(headers);
+    }
+	
+	
 }

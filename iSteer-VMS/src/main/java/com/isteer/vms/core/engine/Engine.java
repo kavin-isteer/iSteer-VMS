@@ -44,8 +44,11 @@ public class Engine {
 	public Map<String, BaseApplication> collectEvidencesAndFetchVulnerabilities(List<Application> applications) {
 	    List<CompletableFuture<BaseApplication>> futures = new ArrayList<>();
 
+	    log.info("Collecting evidences and fetching vulnerabilities for {} applications", applications.size());
 	    for (Application app : applications) {
+	    	log.debug("Processing application UUID: {}, name: {}", app.getUuid(), app.getSoftwareName());
 	        BaseApplication baseApp = resolveSoftwareNames(app);
+	        log.debug("Fetching vulnerabilities for application UUID: {}, CPE: {}", baseApp.getApplication().getUuid(), baseApp.getCpeEnumeration());
 	        CompletableFuture<BaseApplication> future = nvdClient.fetchVulnerabilitiesRateLimited(baseApp);
 	        futures.add(future);
 	    }
@@ -64,6 +67,7 @@ public class Engine {
 
 	private BaseApplication resolveSoftwareNames(Application application) {
 
+		log.info("Resolving CPE name for application UUID: {}, name: {}", application.getUuid(), application.getSoftwareName());
 		BaseApplication resolvedApplication = new BaseApplication();
 
 		Evidence productEvidence = new Evidence();
@@ -91,6 +95,8 @@ public class Engine {
 		cpe.setVersion(application.getSoftwareVersion());
 		cpe.addResolveMethod(CpeField.VERSION, ResolveMethod.ARBITRARY);
 
+		log.debug("Fetching resolved value for vendor and product names for application UUID: {}, vendor: {}, product: {}", 
+				application.getUuid(), application.getVendorName(), application.getSoftwareName());
 		String resolvedVendor = cpeHintDao.getStandardisedNameForMatchKey(application.getVendorName(), "vendor");
 		String resolvedProduct = cpeHintDao.getStandardisedNameForMatchKey(application.getSoftwareName(), "product");
 		

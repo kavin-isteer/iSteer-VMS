@@ -52,10 +52,14 @@ public class ComputerServiceImpl implements ComputerService {
 			log.info("Found existing computer with deviceId: {}", computer.getDeviceId());
 			Computer existing = existingOpt.get();
 
-			if (existing.isDeleted())
+			if (existing.isDeleted()) {
+				log.warn("Computer with deviceId: {} is deleted, cannot update.", computer.getDeviceId());
 				return -1;
-			if (!existing.isActive())
+			}
+			if (!existing.isActive()) {
+				log.warn("Computer with deviceId: {} is inactive, cannot update.", computer.getDeviceId());
 				return -2;
+			}
 
 			if (!checkIfUpdateRequired(computer, existing)) {
 				existing = updateExistingComputer(existing, computer);
@@ -63,16 +67,16 @@ public class ComputerServiceImpl implements ComputerService {
 				int status = computerDao.createOrUpdateComputer(existing);
 				return finalizeStatus(status, applicationService.createOrUpdateApplication(existing.getUuid(),
 						computer.getInstalledSoftwares()), false);
-				
+
 			} else {
 				log.debug("No update required for computer with deviceId: {}", computer.getDeviceId());
-				return finalizeStatus(0,
-						applicationService.createOrUpdateApplication(existing.getUuid(), computer.getInstalledSoftwares()),
-						true);
+				return finalizeStatus(0, applicationService.createOrUpdateApplication(existing.getUuid(),
+						computer.getInstalledSoftwares()), true);
 			}
-			
+
 		}
 
+		log.info("No existing computer found with deviceId: {}, creating a new one.", computer.getDeviceId());
 		Computer newComputer = buildNewComputer(computer);
 		log.info("Creating new computer with deviceId: {}", computer.getDeviceId());
 		int computerStatus = computerDao.createOrUpdateComputer(newComputer);
@@ -100,6 +104,8 @@ public class ComputerServiceImpl implements ComputerService {
 	}
 
 	private int finalizeStatus(int compStatus, int appStatus, boolean noUpdateRequired) {
+		log.debug("Finalizing status with computer status: {}, application status: {}, noUpdateRequired: {}",
+				compStatus, appStatus, noUpdateRequired);
 		if (appStatus == -1)
 			return -3;
 		if (compStatus == 1 && appStatus == 1)
@@ -118,6 +124,7 @@ public class ComputerServiceImpl implements ComputerService {
 	}
 
 	private boolean checkIfUpdateRequired(ComputerPayloadDto payload, Computer existing) {
+		log.debug("Checking if update is required for computer with deviceId: {}", existing.getDeviceId());
 		return isEqual(existing.getMachineName(), payload.getMachineName())
 				&& isEqual(existing.getIpAddress(), payload.getIpAddress())
 				&& isEqual(existing.getOsVersion(), payload.getOsVersion())
@@ -150,7 +157,7 @@ public class ComputerServiceImpl implements ComputerService {
 
 	@Override
 	public DashboardMetricsDto getDashboardMetrics() {
-		log.info("Loading Dashboard Metrics");
+		log.info("Loading Dashboard Metrics...");
 		Map<String, Integer> installedVulnerableAppCounts = applicationDao.getInstalledVulnerableAppCounts();
 		return DashboardMetricsDto.builder().totalComputers(computerDao.getTotalComputersCount())
 				.vulnerableComputers(computerDao.getVulnerableComputersCount())
@@ -158,8 +165,7 @@ public class ComputerServiceImpl implements ComputerService {
 				.totalHighVulnerableApplications(installedVulnerableAppCounts.getOrDefault("HIGH", 0))
 				.totalMediumVulnerableApplications(installedVulnerableAppCounts.getOrDefault("MEDIUM", 0))
 				.totalLowVulnerableApplications(installedVulnerableAppCounts.getOrDefault("LOW", 0))
-				.computerDetails(getComputerDetails())
-				.build();
+				.computerDetails(getComputerDetails()).build();
 	}
 
 	private List<ComputerResponseDto> getComputerDetails() {
