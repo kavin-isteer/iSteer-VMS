@@ -2,6 +2,8 @@ package com.isteer.vms.core.engine.nvdclient;
 
 import org.springframework.stereotype.Component;
 
+import lombok.extern.log4j.Log4j2;
+
 import java.time.Instant;
 import java.util.Deque;
 import java.util.LinkedList;
@@ -9,6 +11,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
 
 @Component
+@Log4j2
 public class RateLimiter {
 
     private static final int MAX_REQUESTS = 50;
@@ -27,7 +30,7 @@ public class RateLimiter {
         return CompletableFuture.runAsync(() -> {
             while (true) {
                 long now = Instant.now().toEpochMilli();
-
+                
                 lock.lock();
                 try {
                     // Remove old timestamps
@@ -37,7 +40,10 @@ public class RateLimiter {
 
                     if (requestTimestamps.size() < MAX_REQUESTS) {
                         requestTimestamps.offerLast(now);
+                        log.debug("Permit acquired. Current requests: {}, Time window: {} ms", requestTimestamps.size(), TIME_WINDOW_MS);
                         return;
+                    } else {
+                    	log.debug("Rate limit exceeded. Current requests: {}, Time window: {} ms", requestTimestamps.size(), TIME_WINDOW_MS);
                     }
 
                 } finally {
@@ -47,6 +53,7 @@ public class RateLimiter {
                 try {
                     Thread.sleep(100); // Retry every 100ms
                 } catch (InterruptedException e) {
+                	log.error("Rate limiter interrupted while waiting for permit acquisition with error: {}", e.getMessage());
                     Thread.currentThread().interrupt();
                     throw new RuntimeException("Rate limiter interrupted", e);
                 }
@@ -60,8 +67,10 @@ public class RateLimiter {
     public <T> CompletableFuture<T> submit(Callable<T> task) {
         return acquirePermit().thenApplyAsync(ignored -> {
             try {
+            	log.debug("Executing task after acquiring permit");
                 return task.call();
             } catch (Exception e) {
+            	log.error("Error executing task after acquiring permit with error: {}", e.getMessage());
                 throw new CompletionException(e);
             }
         }, executor);

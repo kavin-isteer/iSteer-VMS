@@ -10,7 +10,10 @@ import com.isteer.vms.core.engine.enums.HintAddedBy;
 import com.isteer.vms.core.engine.model.CpeHint;
 import com.isteer.vms.model.Application;
 
+import lombok.extern.log4j.Log4j2;
+
 @Service
+@Log4j2
 public class HintService {
 	private CpeHintDao hintDao;
 
@@ -20,6 +23,7 @@ public class HintService {
 	}
 
 	public int addApplicationHint(String cpeName, Application application) {
+		log.debug("Adding application hint for CPE: {}", cpeName);
 		if (!isValidCPE(cpeName)) { 
 			return -1;
 		}
@@ -51,11 +55,14 @@ public class HintService {
 			hintToSave.setAddedBy(HintAddedBy.CLIENT_USER);
 			rows = hintDao.addDependencyHint(hintToSave);
 			if(rows>0) {
+				log.info("Successfully added application hint for CPE: {}", cpeName);
 				return 1;
 			}else {
+				log.error("Failed to add product hint for CPE: {}", cpeName);
 				return -2;
 			}
 		}else {
+			log.error("Failed to add vendor hint for CPE: {}", cpeName);
 			return -3;
 		}
 	}

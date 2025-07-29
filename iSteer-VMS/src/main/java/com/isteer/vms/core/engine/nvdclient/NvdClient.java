@@ -125,6 +125,7 @@ public class NvdClient {
     public List<Vulnerability> getVulnerabilitiesByCveId(String cveId) throws NvdApiException {
         try {
             String url = String.format("%s?cveId=%s", CVE_BASE_URL, cveId);
+            log.debug("Fetching CVE data for CVE ID: {} with URL: {}", cveId, url);
             ResponseEntity<Object> response = restTemplate.exchange(url, HttpMethod.GET, getHeaders(), Object.class);
 
             if (!response.getStatusCode().is2xxSuccessful()) {
@@ -150,6 +151,7 @@ public class NvdClient {
     public List<Vulnerability> getVulnerabilitiesByKeywords(String keywords) throws NvdApiException {
         try {
             String url = String.format("%s?keywordSearch=%s", CVE_BASE_URL, keywords);
+            log.debug("Fetching CVE data for keyword: {} with URL: {}", keywords, url);
             ResponseEntity<Object> response = restTemplate.exchange(url, HttpMethod.GET, getHeaders(), Object.class);
 
             if (!response.getStatusCode().is2xxSuccessful()) {
@@ -176,6 +178,7 @@ public class NvdClient {
         try {
             String encodedCpe = URLEncoder.encode(cpe, StandardCharsets.UTF_8.toString());
             String url = String.format("%s?cpeName=%s", CVE_BASE_URL, encodedCpe);
+            log.debug("Fetching CVE data for CPE name: {} with URL: {}", cpe, url);
             URI uri = new URI(url);
             ResponseEntity<Object> response = restTemplate.exchange(uri, HttpMethod.GET, getHeaders(), Object.class);
 
@@ -203,6 +206,7 @@ public class NvdClient {
         try {
             String encodedCpe = URLEncoder.encode(cpeName, StandardCharsets.UTF_8.toString());
             String url = String.format("%s?cpeMatchString=%s", CPE_BASE_URL, encodedCpe);
+            log.debug("Fetching CPE names for match string: {} with URL: {}", cpeName, url);
             URI uri = new URI(url);
             ResponseEntity<Object> response = restTemplate.exchange(uri, HttpMethod.GET, getHeaders(), Object.class);
 
@@ -229,6 +233,7 @@ public class NvdClient {
     public List<CpeName> getCpeNameListByKeywords(String keywords) throws NvdApiException {
         try {
             String url = String.format("%s?keywordSearch=%s", CPE_BASE_URL, keywords);
+            log.debug("Fetching CPE names for keyword: {} with URL: {}", keywords, url);
             ResponseEntity<Object> response = restTemplate.exchange(url, HttpMethod.GET, getHeaders(), Object.class);
 
             if (!response.getStatusCode().is2xxSuccessful()) {
@@ -408,6 +413,7 @@ public class NvdClient {
      * @return List of affected product models.
      */
 	public List<VulnerabilityAffectedProduct> processAffectedProducts(List<Object> configurations) {
+		log.debug("Processing affected products from CVE API response...");
 		List<VulnerabilityAffectedProduct> affectedProducts = new ArrayList<>();
 
 		try {
@@ -439,9 +445,9 @@ public class NvdClient {
 				}
 			}
 		} catch (Exception e) {
-			log.error("Error processing affected products: " + e.getMessage());
+			log.error("Error processing affected products: {}", e.getMessage());
 		}
-
+		log.debug("Processed {} affected products from API response.", affectedProducts.size());
 		return affectedProducts;
 	}
 	
@@ -452,6 +458,7 @@ public class NvdClient {
      * @return List of parsed reference models.
      */
 	private List<VulnerabilityReference> processReferences(List<Object> references) {
+		log.debug("Processing references from CVE API response...");
 		List<VulnerabilityReference> mitigationReferences = new ArrayList<>();
 		try {
 			if (references != null) {
@@ -466,9 +473,9 @@ public class NvdClient {
 				}
 			}
 		} catch (Exception e) {
-			log.error("Error processing references: " + e.getMessage());
+			log.error("Error processing references: {}", e.getMessage());
 		}
-
+		log.debug("Processed {} references from API response.", mitigationReferences.size());
 		return mitigationReferences;
 	}
 	
