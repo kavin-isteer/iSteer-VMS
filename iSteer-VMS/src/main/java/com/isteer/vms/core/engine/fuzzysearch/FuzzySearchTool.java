@@ -27,10 +27,9 @@ public class FuzzySearchTool {
 		try {
 			filteredCpes = luceneSearcher.multiFieldSearch(vendorSearchString, productSearchString,
 					versionSearchString);
-			log.info("Found likely cpes: {}", filteredCpes.size());
 		} catch (Exception e) {
-			log.debug(e.getMessage());
-			log.debug("Exception occured while searching for likely cpes !!");
+			log.debug("Exception occured while searching for likely cpes with error message: {}", e.getMessage());
+			return List.of();
 		}
 		if (!filteredCpes.isEmpty()) {
 			for (CpeEntry entry : filteredCpes) {

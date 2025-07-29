@@ -26,7 +26,6 @@ public class ComputerDaoImpl implements ComputerDao {
 	private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
 	public ComputerDaoImpl(JdbcTemplate jdbcTemplate, NamedParameterJdbcTemplate namedParameterJdbcTemplate) {
-		super();
 		this.jdbcTemplate = jdbcTemplate;
 		this.namedParameterJdbcTemplate = namedParameterJdbcTemplate;
 	}
@@ -136,6 +135,7 @@ public class ComputerDaoImpl implements ComputerDao {
 
 	@Override
 	public Map<String, Integer> getInstalledAppCounts() {
+		log.debug("Fetching counts of installed applications per computer from the database");
 		String query = "SELECT computer_uuid, COUNT(DISTINCT application_uuid) AS app_count "
 				+ "FROM computer_applications WHERE is_deleted = false GROUP BY computer_uuid";
 		try {
@@ -149,13 +149,14 @@ public class ComputerDaoImpl implements ComputerDao {
 				return result;
 			});
 		} catch (Exception e) {
-			// TODO: handle exception
+			log.error("Error fetching installed application counts: {}", e.getMessage());
 			return Map.of();
 		}
 	}
 
 	@Override
 	public Map<String, Integer> getVulnerableAppCounts() {
+		log.debug("Fetching counts of vulnerable applications per computer from the database.");
 		String query = "SELECT ca.computer_uuid, COUNT(DISTINCT ca.application_uuid) AS vuln_app_count"
 				+ " FROM computer_applications ca "
 				+ "JOIN application_vulnerabilities av ON ca.application_uuid = av.application_uuid "
@@ -171,7 +172,7 @@ public class ComputerDaoImpl implements ComputerDao {
 				return result;
 			});
 		} catch (Exception e) {
-			// TODO: handle exception
+			log.error("Error fetching vulnerable application counts: {}", e.getMessage());
 			return Map.of();
 		}
 	}

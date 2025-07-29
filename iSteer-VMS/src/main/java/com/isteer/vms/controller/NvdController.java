@@ -7,6 +7,7 @@ import org.apache.logging.log4j.core.config.plugins.validation.constraints.Requi
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -55,8 +56,8 @@ public class NvdController {
 		}
 	}
 
-	@GetMapping("/search/vulnerability")
-	public ResponseEntity<Object> searchVulnerability(@RequestParam(required = true) String searchType,
+	@GetMapping("/search/vulnerability/{searchType}")
+	public ResponseEntity<Object> searchVulnerability(@PathVariable String searchType,
 			@RequestParam(required = false) String searchKeyword, @RequestParam(required = false) String searchCveId,
 			@RequestParam(required = false) String searchCpeName) {
 		log.info("Received request to search vulnerability or CPE name...");

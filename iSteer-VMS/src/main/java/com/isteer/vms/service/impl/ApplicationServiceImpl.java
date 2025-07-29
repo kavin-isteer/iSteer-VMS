@@ -42,12 +42,15 @@ public class ApplicationServiceImpl implements ApplicationService {
 		log.info("Processing applications for computer UUID: {}", computerUuid);
 
 		List<Application> existingApps = applicationDao.getAllApplications();
+		log.debug("Found {} existing applications in the database", existingApps.size());
 		List<ComputerApplication> existingCompApps = applicationDao.getApplicationsByComputerUuid(computerUuid);
+		log.debug("Found {} existing computer application mappings for computer UUID: {}", existingCompApps.size(), computerUuid);
 
 		Set<String> appKeys = toKeySet(existingApps);
 		Set<String> compAppKeys = toKeySetFromCompApps(existingCompApps);
 
 		List<SoftwarePayloadDto> newSoftware = findNewSoftware(software, appKeys);
+		log.debug("Found {} new software entries to process", newSoftware.size());
 		if (!newSoftware.isEmpty()) {
 			List<Application> inserted = createNewApplications(newSoftware);
 			if (inserted == null || inserted.isEmpty())
@@ -55,6 +58,7 @@ public class ApplicationServiceImpl implements ApplicationService {
 			existingApps = applicationDao.getAllApplications(); // refresh
 			appKeys.addAll(toKeySet(inserted));
 		}
+		log.debug("Total applications after insertion: {}", existingApps.size());
 
 		int deleted = handleDeletedApplications(software, existingCompApps);
 		int activated = handleActivatedApplications(software, existingCompApps);
@@ -85,7 +89,10 @@ public class ApplicationServiceImpl implements ApplicationService {
 	        })
 	        .toList();
 
-	    if (toDelete.isEmpty()) return 0;
+	    if (toDelete.isEmpty()) {
+	    	log.debug("No stale computer application mappings to delete");
+	    	return 0;
+	    }
 
 	    log.info("Deleting {} stale computer application mappings", toDelete.size());
 	    return applicationDao.deleteOrActivateComputerApplications(toDelete);
@@ -103,7 +110,10 @@ public class ApplicationServiceImpl implements ApplicationService {
 	        })
 	        .toList();
 
-	    if (toActivate.isEmpty()) return 0;
+	    if (toActivate.isEmpty()) {
+	    	log.debug("No computer application mappings to rectivate");
+	    	return 0;
+	    }
 
 	    log.info("Reactivating {} application mappings", toActivate.size());
 	    return applicationDao.deleteOrActivateComputerApplications(toActivate);
@@ -114,15 +124,19 @@ public class ApplicationServiceImpl implements ApplicationService {
 			List<Application> existingApps, Set<String> appKeys, Set<String> compAppKeys) {
 		List<String> newKeys = software.stream().map(this::key)
 				.filter(k -> !compAppKeys.contains(k) && appKeys.contains(k)).toList();
+		log.info("Found {} new mappings for computer UUID: {}", newKeys.size(), computerUuid);
 
-		if (newKeys.isEmpty())
+		if (newKeys.isEmpty()) {
+			log.debug("No new mappings to process for computer UUID: {}", computerUuid);
 			return 0;
+		}
 
 		List<Application> newMappings = existingApps.stream().filter(app -> newKeys.contains(key(app)))
 				.toList();
 
 		List<ComputerApplication> computerApplications = mapApplicationsToComputer(computerUuid, newMappings);
 		mergeInstalledDates(computerApplications, software);
+		log.info("Mapping {} new applications to computer UUID: {}", computerApplications.size(), computerUuid);
 		return applicationDao.insertComputerApplications(computerApplications);
 	}
 
@@ -132,6 +146,7 @@ public class ApplicationServiceImpl implements ApplicationService {
 	}
 
 	private int determineFinalStatus(int mapped, int deleted, int activated) {
+		log.debug("Final status - mapped: {}, deleted: {}, activated: {}", mapped, deleted, activated);
 		if (mapped == 0 && deleted == 0 && activated == 0)
 			return 0;
 		if (mapped == 1 && deleted == 0 && activated == 0)
@@ -175,7 +190,6 @@ public class ApplicationServiceImpl implements ApplicationService {
 		}
 
 		log.info("Successfully inserted {} new applications", applications.size());
-		log.error("Applications to be analyzed: {}", applications);
 		vulnerabilityService.analyzeAndSaveApplicationVulnerabilitiesAsync(applications);
 		return applications;
 	}
@@ -200,7 +214,7 @@ public class ApplicationServiceImpl implements ApplicationService {
 
 	@Override
 	public List<ApplicationResponseDto> getApplicationDetails(String computerUuid) {
-		
+		log.debug("Fetching application details for computer UUID: {}", computerUuid);
 		Map<String, Map<String, Integer>> vulnerabilityCounts = vulnerabilityDao.getVulnerabilityCountsByApplication();
 		Map<String, ApplicationCpeName> cpeNames = vulnerabilityDao.getCpeNamesByComputerUuid(computerUuid);
 		

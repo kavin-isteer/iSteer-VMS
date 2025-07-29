@@ -34,7 +34,6 @@ public class ComputerServiceImpl implements ComputerService {
 
 	public ComputerServiceImpl(ComputerDao computerDao, ApplicationService applicationService,
 			VulnerabilityDao vulnerabilityDao, ApplicationDao applicationDao) {
-		super();
 		this.computerDao = computerDao;
 		this.applicationService = applicationService;
 		this.vulnerabilityDao = vulnerabilityDao;
@@ -69,7 +68,7 @@ public class ComputerServiceImpl implements ComputerService {
 						computer.getInstalledSoftwares()), false);
 
 			} else {
-				log.debug("No update required for computer with deviceId: {}", computer.getDeviceId());
+				log.debug("Computer details are already up to date for computer UUID:  {}", computer.getDeviceId());
 				return finalizeStatus(0, applicationService.createOrUpdateApplication(existing.getUuid(),
 						computer.getInstalledSoftwares()), true);
 			}
@@ -169,6 +168,7 @@ public class ComputerServiceImpl implements ComputerService {
 	}
 
 	private List<ComputerResponseDto> getComputerDetails() {
+		log.debug("Fetching computer details for dashboard metrics");
 		Map<String, Map<String, Integer>> vulnerabilityCounts = vulnerabilityDao.getVulnerabilityCountsByComputer();
 		Map<String, Integer> installedAppCounts = computerDao.getInstalledAppCounts();
 		Map<String, Integer> vulnerableAppCounts = computerDao.getVulnerableAppCounts();
