@@ -25,9 +25,9 @@ public class EmailServiceImpl implements EmailService{
 	}
 	
 	@Override
-	public void sendVulnEmailNotification(String to, ComputerResponseDto data) {
+	public void sendVulnEmailNotification(ComputerResponseDto data) {
 		try {
-			javaMailSender.send(new vulnerabilityEmailPreparator(to,data));
+			javaMailSender.send(new vulnerabilityEmailPreparator(data));
 		} catch (Exception e) { 
 			e.printStackTrace();
 		}
@@ -35,10 +35,10 @@ public class EmailServiceImpl implements EmailService{
 	}
 
 	@Override
-	public void sendVulnEmailNotifications(List<String> toEmail, ComputerResponseDto data) {
-		for(String email : toEmail) {
+	public void sendVulnEmailNotifications(List<ComputerResponseDto> data) {
+		for(ComputerResponseDto computer : data) {
 			try {
-				javaMailSender.send(new vulnerabilityEmailPreparator(email, data));
+				javaMailSender.send(new vulnerabilityEmailPreparator(computer));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -52,8 +52,8 @@ class vulnerabilityEmailPreparator implements MimeMessagePreparator{
 	private String subject;
 	private String emailBody;
 	
-	public vulnerabilityEmailPreparator(String toEmail, ComputerResponseDto data) {
-		this.toEmail = toEmail;
+	public vulnerabilityEmailPreparator(ComputerResponseDto data) {
+		//Set to email from computer response dto
 		
 		//Set subject
 		

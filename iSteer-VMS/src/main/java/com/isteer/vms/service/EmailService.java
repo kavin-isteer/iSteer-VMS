@@ -6,7 +6,7 @@ import com.isteer.vms.dto.ComputerResponseDto;
 
 public interface EmailService {
 
-	void sendVulnEmailNotification(String toEmail,ComputerResponseDto data);
-	void sendVulnEmailNotifications(List<String> toEmail,ComputerResponseDto data);
+	void sendVulnEmailNotification(ComputerResponseDto data);
+	void sendVulnEmailNotifications(List<ComputerResponseDto> data);
 
 }
