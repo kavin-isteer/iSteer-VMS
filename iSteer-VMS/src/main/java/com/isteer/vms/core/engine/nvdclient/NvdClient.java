@@ -314,9 +314,13 @@ public class NvdClient {
 						vulnerabilityDetail.setCvssMetrics(processCvssMetrics(cvssMetricsMap));
 					}
 
+					try {
 					List<Object> affectedProducts = JsonPath.read(cveItem, "$.cve.configurations[*].nodes[*].cpeMatch");
 					if (affectedProducts != null) {
 						vulnerabilityDetail.setAffectedProducts(processAffectedProducts(affectedProducts));
+					} 
+					} catch (Exception e) {
+						log.warn("No affected products found for CVE ID: {}", vulnerabilityDetail.getCveId());
 					}
 
 					List<Object> references = JsonPath.read(cveItem, "$.cve.references[*]");
@@ -328,7 +332,7 @@ public class NvdClient {
 				}
 			}
 		} catch (Exception e) {
-			log.error("Error parsing CVE API response: {}", e.getMessage());
+			log.error("Error parsing CVE API response: {}, {}", e.getMessage(), cveApiResponse);
 		}
 		log.debug("Parsed {} vulnerability details from API response.", vulnerabilityDetails.size());
 		return vulnerabilityDetails;
@@ -382,12 +386,19 @@ public class NvdClient {
 								cvssMetricModel.setVersion(JsonPath.read(cvssMetric, "$.cvssData.version"));
 								cvssMetricModel.setBaseScore(JsonPath.read(cvssMetric, "$.cvssData.baseScore"));
 								cvssMetricModel.setVectorString(JsonPath.read(cvssMetric, "$.cvssData.vectorString"));
+								if("cvssMetricV2".equals(metricType)) {
+									cvssMetricModel.setBaseSeverity(JsonPath.read(cvssMetric, "$.baseSeverity"));
+									cvssMetricModel.setAttackVector(JsonPath.read(cvssMetric, "$.cvssData.accessVector"));
+									cvssMetricModel.setAttackComplexity(JsonPath.read(cvssMetric, "$.cvssData.accessComplexity"));
+									cvssMetricModel.setPrivilegesRequired(JsonPath.read(cvssMetric, "$.cvssData.authentication"));
+								} else {
 								cvssMetricModel.setBaseSeverity(JsonPath.read(cvssMetric, "$.cvssData.baseSeverity"));
 								cvssMetricModel.setAttackVector(JsonPath.read(cvssMetric, "$.cvssData.attackVector"));
 								cvssMetricModel.setAttackComplexity(JsonPath.read(cvssMetric, "$.cvssData.attackComplexity"));
 								cvssMetricModel.setPrivilegesRequired(JsonPath.read(cvssMetric, "$.cvssData.privilegesRequired"));
 								cvssMetricModel.setUserInteraction(JsonPath.read(cvssMetric, "$.cvssData.userInteraction"));
 								cvssMetricModel.setScope(JsonPath.read(cvssMetric, "$.cvssData.scope"));
+								}
 								cvssMetricModel.setConfidentiality(JsonPath.read(cvssMetric, "$.cvssData.confidentialityImpact"));
 								cvssMetricModel.setIntegrity(JsonPath.read(cvssMetric, "$.cvssData.integrityImpact"));
 								cvssMetricModel.setAvailability(JsonPath.read(cvssMetric, "$.cvssData.availabilityImpact"));
@@ -400,7 +411,7 @@ public class NvdClient {
 				}
 			}
 		} catch (Exception e) {
-			log.error("Error processing CVSS metrics: {}", e.getMessage());
+			log.error("Error processing CVSS metrics: {}, {}", e.getMessage(), metricMap);
 		}
 		log.debug("Processed {} CVSS metrics from API response.", parsedCvssMetrics.size());
 		return parsedCvssMetrics;
