@@ -190,5 +190,9 @@ public class ComputerServiceImpl implements ComputerService {
 					.applicationDetails(applicationService.getApplicationDetails(computer.getUuid())).build();
 		}).toList();
 	}
-
+	@Override
+	public List<ComputerResponseDto> getAllComputersWithVulnerabilities() {
+		log.info("Fetching all computers with vulnerabilities.");
+		return computerDao.getAllComputersWithVulnerabilities();
+	}
 }

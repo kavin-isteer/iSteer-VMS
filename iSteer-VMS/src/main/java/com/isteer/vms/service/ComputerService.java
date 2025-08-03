@@ -3,6 +3,7 @@ package com.isteer.vms.service;
 import java.util.List;
 
 import com.isteer.vms.dto.ComputerPayloadDto;
+import com.isteer.vms.dto.ComputerResponseDto;
 import com.isteer.vms.dto.DashboardMetricsDto;
 import com.isteer.vms.model.Computer;
 
@@ -48,5 +49,7 @@ public interface ComputerService {
 	List<Computer> getAllComnputers(String status);
 
 	DashboardMetricsDto getDashboardMetrics();
+	
+	List<ComputerResponseDto> getAllComputersWithVulnerabilities();
 
 }

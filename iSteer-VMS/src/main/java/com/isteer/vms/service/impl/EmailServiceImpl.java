@@ -14,7 +14,9 @@ import com.isteer.vms.service.EmailService;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMessage.RecipientType;
+import lombok.extern.log4j.Log4j2;
 @Service
+@Log4j2
 public class EmailServiceImpl implements EmailService{
 	private JavaMailSender javaMailSender;
 	
@@ -30,20 +32,23 @@ public class EmailServiceImpl implements EmailService{
 		try {
 			javaMailSender.send(new vulnerabilityEmailPreparator(data, fromEmail));
 		} catch (Exception e) { 
-			e.printStackTrace();
+			//e.printStackTrace();
+			log.error(e.getMessage());
 		}
 		
 	}
 
 	@Override
 	public void sendVulnEmailNotifications(List<ComputerResponseDto> data) {
-//		for(ComputerResponseDto computer : data) {
-//			try {
-//				javaMailSender.send(new vulnerabilityEmailPreparator(computer));
-//			} catch (Exception e) {
-//				e.printStackTrace();
-//			}
-//		}
+		for(ComputerResponseDto computer : data) {
+			try {
+				javaMailSender.send(new vulnerabilityEmailPreparator(computer,fromEmail));
+			} catch (Exception e) {
+			//	e.printStackTrace();
+				log.error(e.getMessage());
+				
+			}
+		}
 		
 	}
 }
@@ -59,7 +64,7 @@ class vulnerabilityEmailPreparator implements MimeMessagePreparator{
 		 String appRows = generateApplicationRows(data.getApplicationDetails());
 		 this.fromEmail = fromEmail;
 //		 this.toEmail = data.getUserEmail();
-		 this.toEmail = "kavin.kr@isteer.com";
+//		 this.toEmail = "kavin.kr@isteer.com";
 //		 this.toEmail = "ponvasanth71@gmail.com";
 		 this.emailBody = "<html>\n" +
 	                "  <body style=\"font-family: Arial, sans-serif; line-height: 1.6; color: #333;\">\n" +

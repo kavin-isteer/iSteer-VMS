@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.isteer.vms.dto.ComputerResponseDto;
 import com.isteer.vms.model.Computer;
 
 public interface ComputerDao {
@@ -23,4 +24,6 @@ public interface ComputerDao {
 	Map<String, Integer> getInstalledAppCounts();
 
 	Map<String, Integer> getVulnerableAppCounts();
+	
+	List<ComputerResponseDto> getAllComputersWithVulnerabilities();
 }

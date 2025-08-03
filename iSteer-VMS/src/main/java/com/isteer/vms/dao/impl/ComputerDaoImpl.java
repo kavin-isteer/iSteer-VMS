@@ -1,5 +1,6 @@
 package com.isteer.vms.dao.impl;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,8 @@ import org.springframework.stereotype.Repository;
 
 import com.isteer.vms.dao.ComputerDao;
 import com.isteer.vms.dao.rowmapper.ComputerRowMapper;
+import com.isteer.vms.dto.ApplicationResponseDto;
+import com.isteer.vms.dto.ComputerResponseDto;
 import com.isteer.vms.model.Computer;
 
 import lombok.extern.log4j.Log4j2;
@@ -175,6 +178,89 @@ public class ComputerDaoImpl implements ComputerDao {
 			log.error("Error fetching vulnerable application counts: {}", e.getMessage());
 			return Map.of();
 		}
+	}
+
+	@Override
+	public List<ComputerResponseDto> getAllComputersWithVulnerabilities() {
+		log.info("Fetching all computers with vulnerabilities from the database");
+		String sql = "SELECT " +
+			    "cmp.uuid AS computer_uuid, " +
+			    "cmp.hostname, " +
+			    "cmp.ip_address, " +
+			    "cmp.logged_in_user, " +
+			    "a.uuid AS application_uuid, " +
+			    "a.name, " +
+			    "a.version, " +
+			    "a.vendor_name, " +
+			    "COUNT(CASE WHEN v.severity = 'HIGH' THEN 1 END) AS high_severity_count, " +
+			    "COUNT(CASE WHEN v.severity = 'MEDIUM' THEN 1 END) AS medium_severity_count, " +
+			    "COUNT(CASE WHEN v.severity = 'LOW' THEN 1 END) AS low_severity_count, " +
+			    "COUNT(CASE WHEN v.severity = 'CRITICAL' THEN 1 END) AS critical_severity_count " +
+			    "FROM " +
+			    "computers cmp " +
+			    "INNER JOIN " +
+			    "computer_applications cap ON cmp.uuid = cap.computer_uuid " +
+			    "INNER JOIN " +
+			    "applications a ON cap.application_uuid = a.uuid " +
+			    "INNER JOIN " +
+			    "application_vulnerabilities av ON a.uuid = av.application_uuid " +
+			    "INNER JOIN " +
+			    "vulnerabilities v ON av.vulnerability_uuid = v.uuid " +
+			    "WHERE " +
+			    "cmp.is_deleted = 0 AND cap.is_deleted=0 AND v.is_deleted = 0 " +
+			    "GROUP BY " +
+			    "cmp.uuid, " +
+			    "cmp.hostname, " +
+			    "cmp.ip_address, " +
+			    "cmp.logged_in_user, " +
+			    "a.uuid, " +
+			    "a.name, " +
+			    "a.version, " +
+			    "a.vendor_name;";
+
+		return jdbcTemplate.query(sql, rs->{
+			List<ComputerResponseDto> dtos = new ArrayList<>();
+			Map<String, ComputerResponseDto> dtoMap = new HashMap<>();
+			while(rs.next()) {
+				String computerUuid = rs.getString("computer_uuid");
+				if(dtoMap.containsKey(computerUuid)) {
+					ApplicationResponseDto wrkDto = ApplicationResponseDto.builder().
+							uuid(rs.getString("application_uuid"))
+							.softwareName(rs.getString("name"))
+							.softwareVersion(rs.getString("version"))
+							.vendor(rs.getString("vendor_name"))
+							.criticalVulnerabilityCount(rs.getInt("critical_severity_count"))
+							.highVulnerabilityCount(rs.getInt("high_severity_count"))
+							.mediumVulnerabilityCount(rs.getInt("medium_severity_count"))
+							.lowVulnerabilityCount(rs.getInt("low_severity_count"))
+							.build();
+					dtoMap.get(computerUuid).getApplicationDetails().add(wrkDto);
+				}else {
+				  	List<ApplicationResponseDto> appDetails = new ArrayList<>();
+					ApplicationResponseDto wrkDto = ApplicationResponseDto.builder().
+							uuid(rs.getString("application_uuid"))
+							.softwareName(rs.getString("name"))
+							.softwareVersion(rs.getString("version"))
+							.vendor(rs.getString("vendor_name"))
+							.criticalVulnerabilityCount(rs.getInt("critical_severity_count"))
+							.highVulnerabilityCount(rs.getInt("high_severity_count"))
+							.mediumVulnerabilityCount(rs.getInt("medium_severity_count"))
+							.lowVulnerabilityCount(rs.getInt("low_severity_count"))
+							.build();
+					appDetails.add(wrkDto);
+					ComputerResponseDto computerDto = ComputerResponseDto.builder()
+							.uuid(computerUuid)
+							.machineName(rs.getString("hostname"))
+							.ipAddress(rs.getString("ip_address"))
+							.loggedInUser(rs.getString("logged_in_user"))
+							.applicationDetails(appDetails)
+							.build();
+					dtoMap.put(computerUuid, computerDto);
+				}
+				dtos = dtoMap.values().stream().toList();
+			}
+			return dtos;
+		});
 	}
 
 }

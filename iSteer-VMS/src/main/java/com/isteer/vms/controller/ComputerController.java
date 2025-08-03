@@ -16,12 +16,14 @@ import org.springframework.web.bind.annotation.RestController;
 import com.isteer.vms.core.engine.fuzzysearch.FuzzySearchTool;
 import com.isteer.vms.core.engine.model.CpeName;
 import com.isteer.vms.dto.ComputerPayloadDto;
+import com.isteer.vms.dto.ComputerResponseDto;
 import com.isteer.vms.dto.DashboardMetricsDto;
 import com.isteer.vms.model.Application;
 import com.isteer.vms.model.Computer;
 import com.isteer.vms.response.ResponseCode;
 import com.isteer.vms.response.ResponseUtil;
 import com.isteer.vms.service.ComputerService;
+import com.isteer.vms.service.EmailService;
 import com.isteer.vms.service.VulnerabilityService;
 
 import jakarta.validation.Valid;
@@ -35,13 +37,15 @@ public class ComputerController {
 	private ComputerService computerService;
 	private VulnerabilityService vulnerabilityService;
 	private FuzzySearchTool fuzzySearchTool;
+	private EmailService emailService;
 
 	public ComputerController(ComputerService computerService, VulnerabilityService vulnerabilityService,
-			FuzzySearchTool fuzzySearchTool) {
+			FuzzySearchTool fuzzySearchTool, EmailService emailService) {
 		super();
 		this.computerService = computerService;
 		this.vulnerabilityService = vulnerabilityService;
 		this.fuzzySearchTool = fuzzySearchTool;
+		this.emailService = emailService;
 	}
 
 	@PostMapping("/computers")
@@ -145,4 +149,24 @@ public class ComputerController {
 
 	}
 	
+	@GetMapping("/vulnerableComputers")
+	public ResponseEntity<Object> getVulnerableComputers() {
+		log.info("Received request to fetch all vulnerable computers.");
+		List<ComputerResponseDto> vulnerableComputers = computerService.getAllComputersWithVulnerabilities();
+		if (vulnerableComputers.isEmpty()) {
+			log.info("No vulnerable computers found.");
+			return ResponseEntity.noContent().build();
+		}
+		log.info("Returning {} vulnerable computers.", vulnerableComputers.size());
+		return ResponseUtil.data(vulnerableComputers);
+	}
+	
+	@GetMapping("/sendNotifications")
+	public ResponseEntity<Object> sendNotifications() {
+		log.info("Received request to send notifications.");
+		emailService.sendVulnEmailNotifications(computerService.getAllComputersWithVulnerabilities());
+		Map<String, String> responseMessage = new HashMap<>();
+		responseMessage.put("Status", "Notifications sent successfully!!");
+		return new ResponseEntity<>(responseMessage, HttpStatus.OK);
+	}
 }
