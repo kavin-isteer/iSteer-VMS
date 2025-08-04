@@ -35,7 +35,7 @@ public class NvdController {
 	public ResponseEntity<?> updateCpeDictionary() {
 		Map<String, String> status = new HashMap<>();
 		try {
-			String jobId = jobExecutor.startupdateCpeDictionaryJob();
+			String jobId = jobExecutor.startUpdateCpeDictionaryJob();
 			status.put("jobId", jobId);
 			return ResponseEntity.ok(status);
 		} catch (Exception e) {

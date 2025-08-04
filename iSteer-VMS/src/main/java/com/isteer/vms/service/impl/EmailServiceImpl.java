@@ -29,10 +29,10 @@ public class EmailServiceImpl implements EmailService{
 	
 	@Override
 	public void sendVulnEmailNotification(ComputerResponseDto data) {
+		log.info("Sending vulnerability email notification to computer: {}", data.getMachineName());
 		try {
 			javaMailSender.send(new vulnerabilityEmailPreparator(data, fromEmail));
 		} catch (Exception e) { 
-			//e.printStackTrace();
 			log.error(e.getMessage());
 		}
 		
@@ -40,11 +40,11 @@ public class EmailServiceImpl implements EmailService{
 
 	@Override
 	public void sendVulnEmailNotifications(List<ComputerResponseDto> data) {
+		log.info("Sending vulnerability email notifications to {} computers", data.size());
 		for(ComputerResponseDto computer : data) {
 			try {
 				javaMailSender.send(new vulnerabilityEmailPreparator(computer,fromEmail));
 			} catch (Exception e) {
-			//	e.printStackTrace();
 				log.error(e.getMessage());
 				
 			}
