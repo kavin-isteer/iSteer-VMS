@@ -7,6 +7,7 @@ import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -161,9 +162,16 @@ public class ComputerController {
 		return ResponseUtil.data(vulnerableComputers);
 	}
 	
-	@GetMapping("/sendNotifications")
-	public ResponseEntity<Object> sendNotifications() {
+	@GetMapping({"/sendNotifications/{computerUuid}", "/sendNotifications"})
+	public ResponseEntity<Object> sendNotifications(@PathVariable(required = false) String computerUuid) {
 		log.info("Received request to send notifications.");
+		if(computerUuid != null && !computerUuid.isEmpty()) {
+			log.debug("Sending notification for computer with UUID: {}", computerUuid);
+			emailService.sendVulnEmailNotification(computerService.getComputerWithVulnerabilitiesByUuid(computerUuid));
+			Map<String, String> responseMessage = new HashMap<>();
+			responseMessage.put("Status", "Notification sent successfully for computer with UUID: " + computerUuid);
+			return new ResponseEntity<>(responseMessage, HttpStatus.OK);
+		}
 		emailService.sendVulnEmailNotifications(computerService.getAllComputersWithVulnerabilities());
 		Map<String, String> responseMessage = new HashMap<>();
 		responseMessage.put("Status", "Notifications sent successfully!!");

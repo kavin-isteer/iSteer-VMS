@@ -68,7 +68,7 @@ public class ComputerServiceImpl implements ComputerService {
 						computer.getInstalledSoftwares()), false);
 
 			} else {
-				log.debug("Computer details are already up to date for computer UUID:  {}", computer.getDeviceId());
+				log.info("Computer details are already up to date for computer UUID:  {}", computer.getDeviceId());
 				return finalizeStatus(0, applicationService.createOrUpdateApplication(existing.getUuid(),
 						computer.getInstalledSoftwares()), true);
 			}
@@ -115,7 +115,7 @@ public class ComputerServiceImpl implements ComputerService {
 			return 2;
 		if (compStatus == 0 && appStatus == 0)
 			return 0;
-		if (compStatus == 0 && appStatus < 0)
+		if (compStatus == 0 && appStatus == 1)
 			return 3;
 		if (compStatus == 0 && appStatus == 2)
 			return 3;
@@ -194,5 +194,11 @@ public class ComputerServiceImpl implements ComputerService {
 	public List<ComputerResponseDto> getAllComputersWithVulnerabilities() {
 		log.info("Fetching all computers with vulnerabilities.");
 		return computerDao.getAllComputersWithVulnerabilities();
+	}
+
+	@Override
+	public ComputerResponseDto getComputerWithVulnerabilitiesByUuid(String computerUuid) {
+		log.info("Fetching computer with vulnerabilities by UUID: {}", computerUuid);
+		return computerDao.getComputerWithVulnerabilitiesByUuid(computerUuid);
 	}
 }

@@ -26,4 +26,6 @@ public interface ComputerDao {
 	Map<String, Integer> getVulnerableAppCounts();
 	
 	List<ComputerResponseDto> getAllComputersWithVulnerabilities();
+
+	ComputerResponseDto getComputerWithVulnerabilitiesByUuid(String computerUuid);
 }

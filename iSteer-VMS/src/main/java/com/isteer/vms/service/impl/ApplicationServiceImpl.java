@@ -136,7 +136,7 @@ public class ApplicationServiceImpl implements ApplicationService {
 
 		List<ComputerApplication> computerApplications = mapApplicationsToComputer(computerUuid, newMappings);
 		mergeInstalledDates(computerApplications, software);
-		log.info("Mapping {} new applications to computer UUID: {}", computerApplications.size(), computerUuid);
+		log.debug("Mapping {} new applications to computer UUID: {}", computerApplications.size(), computerUuid);
 		return applicationDao.insertComputerApplications(computerApplications);
 	}
 
