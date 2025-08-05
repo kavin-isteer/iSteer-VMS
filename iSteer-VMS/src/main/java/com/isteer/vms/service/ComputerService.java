@@ -52,4 +52,6 @@ public interface ComputerService {
 	
 	List<ComputerResponseDto> getAllComputersWithVulnerabilities();
 
+	ComputerResponseDto getComputerWithVulnerabilitiesByUuid(String computerUuid);
+
 }

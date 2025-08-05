@@ -4,8 +4,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -119,8 +117,9 @@ public class ApplicationDaoImpl implements ApplicationDao {
 	@Override
 	public int insertComputerApplications(List<ComputerApplication> computerApplications) {
 		log.debug("Inserting {} computer applications mappings into the database", computerApplications.size());
-		String query = "INSERT IGNORE INTO computer_applications (uuid, application_uuid, computer_uuid, installed_date, is_deleted) "
-				+ "VALUES (:uuid, :applicationUuid, :computerUuid, :installedAt, :isDeleted)";
+		String query = "INSERT INTO computer_applications (uuid, application_uuid, computer_uuid, installed_date, is_deleted) "
+				+ "VALUES (:uuid, :applicationUuid, :computerUuid, :installedAt, :isDeleted)"
+				+ " ON DUPLICATE KEY UPDATE installed_date = :installedAt, is_deleted = :isDeleted";
 		MapSqlParameterSource[] batchParams = computerApplications.stream()
 				.map(app -> new MapSqlParameterSource().addValue("uuid", app.getUuid())
 						.addValue("applicationUuid", app.getApplicationUuid())
