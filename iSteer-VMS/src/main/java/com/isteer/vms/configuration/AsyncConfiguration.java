@@ -18,7 +18,7 @@ public class AsyncConfiguration {
 		executor.setCorePoolSize(5);
 		executor.setMaxPoolSize(10);
 		executor.setQueueCapacity(500);
-		executor.setThreadNamePrefix("AppCpeScanner-");
+		executor.setThreadNamePrefix("AppVulnAnalyzer-");
 		executor.initialize();
 		return executor;
 	}
