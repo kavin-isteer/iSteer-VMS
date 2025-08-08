@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.jdbc.BadSqlGrammarException;
 import org.springframework.jdbc.core.RowMapper;
@@ -32,7 +33,7 @@ public class CpeHintDao {
 	 * Retrieves all CPE hints.
 	 */
 	public List<CpeHint> getAllCpeHints() {
-		log.info("Retrieving all CPE hints from the database");
+		log.debug("Retrieving all CPE hints from the database");
 		String query = "SELECT id, type, match_key, standardized_name, confidence, description, created_at, updated_at, evidence_type, addedBy FROM cpe_hints";
 		try {
 			return namedJdbcTemplate.query(query, new MapSqlParameterSource(), new CpeHintRowMapper());
@@ -46,7 +47,7 @@ public class CpeHintDao {
 	 * Retrieves all vendor CPE hints filtered by evidence type.
 	 */
 	public List<CpeHint> getAllVendorCpeHints(String evidenceType) {
-		log.info("Retrieving vendor CPE hints for evidence type: {}", evidenceType);
+		log.debug("Retrieving vendor CPE hints for evidence type: {}", evidenceType);
 		String query = "SELECT id, type, match_key, standardized_name, confidence, description, created_at, updated_at, evidence_type, addedBy "
 				+ "FROM cpe_hints WHERE type = :type AND evidence_type = :evidenceType";
 
@@ -65,7 +66,7 @@ public class CpeHintDao {
 	 * Retrieves all vendor CPE hints.
 	 */
 	public List<CpeHint> getAllVendorCpeHints() {
-		log.info("Retrieving all vendor CPE hints from the database");
+		log.debug("Retrieving all vendor CPE hints from the database");
 		String query = "SELECT id, type, match_key, standardized_name, confidence, description, created_at, updated_at, evidence_type, addedBy "
 				+ "FROM cpe_hints WHERE type = :type";
 
@@ -83,7 +84,7 @@ public class CpeHintDao {
 	 * Retrieves all product CPE hints filtered by evidence type.
 	 */
 	public List<CpeHint> getAllProductCpeHints(String evidenceType) {
-		log.info("Retrieving product CPE hints for evidence type: {}", evidenceType);
+		log.debug("Retrieving product CPE hints for evidence type: {}", evidenceType);
 		String query = "SELECT id, type, match_key, standardized_name, confidence, description, created_at, updated_at, evidence_type, addedBy "
 				+ "FROM cpe_hints WHERE type = :type AND evidence_type = :evidenceType";
 
@@ -134,7 +135,7 @@ public class CpeHintDao {
 	 * Retrieves the standardized name for a given match key and type.
 	 */
 	public String getStandardisedNameForMatchKey(String matchKey, String type) {
-		log.info("Retrieving standardized name for matchkey: {} and type: {}", matchKey, type);
+		log.debug("Retrieving standardized name for matchkey: {} and type: {}", matchKey, type);
 		String query = "SELECT standardized_name FROM cpe_hints WHERE match_key = :matchKey AND evidence_type = :evidenceType AND type = :type";
 
 		MapSqlParameterSource params = new MapSqlParameterSource().addValue("matchKey", matchKey)
@@ -142,14 +143,14 @@ public class CpeHintDao {
 
 		try {
 			return namedJdbcTemplate.queryForObject(query, params, String.class);
+		} catch (EmptyResultDataAccessException e) {
+			log.warn("No standarised names found for matchKey={} and type={}. Returning null.", matchKey, type);
+			return null;
 		} catch(IncorrectResultSizeDataAccessException e) {
 			log.error("Multiple standardized names found for matchKey={} and type={}. Returning null.", matchKey, type);
 			return null;
 		} catch (BadSqlGrammarException e) {
 			log.error("SQL syntax error while retrieving standardized name for matchkey={} and type={}, with error message: {}", matchKey, type, e.getMessage());
-			return null;
-		} catch (DataAccessException e) {
-			log.warn("No standardized name found for matchKey={} and type={}", matchKey, type);
 			return null;
 		}
 	}

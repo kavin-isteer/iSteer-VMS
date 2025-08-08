@@ -3,7 +3,6 @@ package com.isteer.vms.controller;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.isteer.vms.core.engine.job.JobExecuter;
+import com.isteer.vms.exception.BusinessException;
 import com.isteer.vms.response.ResponseCode;
 import com.isteer.vms.response.ResponseUtil;
 import com.isteer.vms.service.VulnerabilityService;
@@ -39,7 +39,7 @@ public class NvdController {
 			status.put("jobId", jobId);
 			return ResponseEntity.ok(status);
 		} catch (Exception e) {
-			return ResponseEntity.status(500).body("Error starting the job" + e.getMessage());
+			throw new BusinessException(e.getMessage(), 500);
 		}
 	}
 
@@ -52,7 +52,7 @@ public class NvdController {
 			status.put("status", jobStatus);
 			return ResponseEntity.ok(status);
 		} catch (Exception e) {
-			return ResponseEntity.status(500).body("Error fetching the job status: " + e.getMessage());
+			throw new BusinessException(e.getMessage(), 500);
 		}
 	}
 
