@@ -80,7 +80,7 @@ public class CPEEntriesDao {
 			String sql = "SELECT id, cpe_name, cpe_title, vendor, product, version, update_date, deprecated "
 					+ "FROM cpe_dictionary c " + "JOIN temp_vendors v ON c.vendor = v.vendors";
 
-			log.info("Fetching CPE entries for {} vendors.", vendors.size());
+			log.debug("Fetching CPE entries for {} vendors.", vendors.size());
 			return jdbcTemplate.query(sql, new CpeEntryRowMapper());
 
 		} catch (DataAccessException e) {
@@ -95,7 +95,7 @@ public class CPEEntriesDao {
 	 * @return List of all CpeEntry records
 	 */
 	public List<CpeEntry> getAllCpeEntries() {
-		log.info("Fetching all CPE entries from cpe_dictionary...");
+		log.debug("Fetching all CPE entries from cpe_dictionary...");
 		String sql = "SELECT id, cpe_name, cpe_title, vendor, product, version, update_date, deprecated "
 				+ "FROM cpe_dictionary";
 		try {
@@ -114,7 +114,7 @@ public class CPEEntriesDao {
 	 * @return List of CpeEntry records with ID > lastId
 	 */
 	public List<CpeEntry> getCpeEntries(int lastId) {
-		log.info("Fetching CPE entries with ID greater than {}", lastId);
+		log.debug("Fetching CPE entries with ID greater than {}", lastId);
 		String sql = "SELECT id, cpe_name, cpe_title, vendor, product, version, update_date, deprecated "
 				+ "FROM cpe_dictionary WHERE id > ? ORDER BY id LIMIT 100000";
 		try {
@@ -133,7 +133,7 @@ public class CPEEntriesDao {
 	 * @return Paginated list of CpeEntry objects
 	 */
 	public List<CpeEntry> getAllCpeEntriesWithOffset(int offset, int limit) {
-		log.info("Fetching CPE entries with offset= {} and limit={}", offset, limit);
+		log.debug("Fetching CPE entries with offset= {} and limit={}", offset, limit);
 		String sql = "SELECT id, cpe_name, cpe_title, vendor, product, version, update_date, deprecated "
 				+ "FROM cpe_dictionary ORDER BY id LIMIT ? OFFSET ?";
 		try {
@@ -149,7 +149,7 @@ public class CPEEntriesDao {
 	 * @return Total number of CPE entries
 	 */
 	public int getTotalCpeEntriesCount() {
-		log.info("Fetching total count of CPE entries from cpe_dictionary...");
+		log.debug("Fetching total count of CPE entries from cpe_dictionary...");
 		String sql = "SELECT COUNT(*) FROM cpe_dictionary";
 		try {
 			return jdbcTemplate.queryForObject(sql, Integer.class);

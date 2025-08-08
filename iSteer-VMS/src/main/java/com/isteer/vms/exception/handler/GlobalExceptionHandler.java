@@ -6,9 +6,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
-import com.isteer.vms.dto.ErrorMessageDto;
-import com.isteer.vms.enums.Message;
 import com.isteer.vms.exception.BusinessException;
+import com.isteer.vms.exception.NvdApiException;
 import com.isteer.vms.response.ResponseCode;
 import com.isteer.vms.response.ResponseUtil;
 
@@ -19,12 +18,13 @@ import lombok.extern.log4j.Log4j2;
 public class GlobalExceptionHandler {
 
 	@ExceptionHandler(BusinessException.class)
-	public ResponseEntity<ErrorMessageDto> handleBusinessException(BusinessException ex) {
-		Message error = ex.getError();
-
-		return new ResponseEntity<>(new ErrorMessageDto(error.getStatusCode(), error.getMessageKey()),
-				HttpStatus.BAD_REQUEST);
-
+	public ResponseEntity<Object> handleBusinessException(BusinessException ex) {
+		return ResponseUtil.message(9010, ex.getMessage(), HttpStatus.valueOf(ex.getStatusCode()));
+	}
+	
+	@ExceptionHandler(NvdApiException.class)
+	public ResponseEntity<Object> handleNvdApiExcption(NvdApiException ex) {
+		return ResponseUtil.message(9009, ex.getMessage(), HttpStatus.valueOf(ex.getStatusCode()));
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
@@ -38,5 +38,9 @@ public class GlobalExceptionHandler {
 	        : ResponseCode.METHOD_ARGUMENT_NOT_VALID.getMessage();
 
 	    return ResponseUtil.message(ResponseCode.METHOD_ARGUMENT_NOT_VALID.getCode(), errorMessage, HttpStatus.BAD_REQUEST);
+	}
+	
+	public ResponseEntity<Object> handleAllException(Exception ex) {
+		return ResponseUtil.message(9999, ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 	}
 }

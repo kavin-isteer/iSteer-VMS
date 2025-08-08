@@ -67,7 +67,7 @@ public class Engine {
 
 	private BaseApplication resolveSoftwareNames(Application application) {
 
-		log.info("Resolving CPE name for application UUID: {}, name: {}", application.getUuid(), application.getSoftwareName());
+		log.debug("Resolving CPE name for application UUID: {}, name: {}", application.getUuid(), application.getSoftwareName());
 		BaseApplication resolvedApplication = new BaseApplication();
 
 		Evidence productEvidence = new Evidence();

@@ -17,7 +17,6 @@ import com.isteer.vms.dao.ComputerDao;
 import com.isteer.vms.dao.rowmapper.ComputerRowMapper;
 import com.isteer.vms.dto.ApplicationResponseDto;
 import com.isteer.vms.dto.ComputerResponseDto;
-import com.isteer.vms.enums.Message;
 import com.isteer.vms.exception.BusinessException;
 import com.isteer.vms.model.Computer;
 
@@ -351,7 +350,7 @@ public class ComputerDaoImpl implements ComputerDao {
 			return dtos.get(0);
 		}); 
 		} catch (IndexOutOfBoundsException ex) {
-			throw new BusinessException(Message.COMPUTER_DEVICE_ID_EXISTS);
+			throw new BusinessException(ex.getMessage(), 400);
 		}
 		catch (Exception ex) {
 			log.error("Exception occured while fetching computer with vulnerabilities for UUID: {}, with error: {}", uuid, ex.getMessage());

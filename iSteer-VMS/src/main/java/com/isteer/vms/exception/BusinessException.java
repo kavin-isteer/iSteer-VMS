@@ -1,22 +1,18 @@
 package com.isteer.vms.exception;
 
-import com.isteer.vms.enums.Message;
-
 public class BusinessException extends RuntimeException{
-
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
+	private final int statusCode;
 	
-	private final Message error;
-	
-	public BusinessException(Message error) {
-		super(error.getMessageKey());
-		this.error = error;
+	public BusinessException(String message, int statusCode) {
+		super(message);
+		this.statusCode = statusCode;
 	}
 	
-	public Message getError() {
-		return error;
+	public int getStatusCode() {
+		return statusCode;
 	}
 }

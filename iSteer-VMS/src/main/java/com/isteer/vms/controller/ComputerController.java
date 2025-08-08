@@ -19,6 +19,7 @@ import com.isteer.vms.core.engine.model.CpeName;
 import com.isteer.vms.dto.ComputerPayloadDto;
 import com.isteer.vms.dto.ComputerResponseDto;
 import com.isteer.vms.dto.DashboardMetricsDto;
+import com.isteer.vms.exception.NvdApiException;
 import com.isteer.vms.model.Application;
 import com.isteer.vms.model.Computer;
 import com.isteer.vms.response.ResponseCode;
@@ -83,7 +84,7 @@ public class ComputerController {
 		List<Computer> computers = computerService.getAllComnputers(status);
 		if(computers.isEmpty()) {
 			log.info("No computers Found.");
-			return ResponseEntity.noContent().build();
+			return ResponseUtil.message(ResponseCode.NO_DATA_FOUND);
 		}
 		log.info("Returning {} computers.", computers.size());
 		return ResponseUtil.data(computers);
@@ -95,7 +96,7 @@ public class ComputerController {
 		DashboardMetricsDto metrics = computerService.getDashboardMetrics();
 		if(metrics == null) {
 			log.info("No metrics found.");
-			return ResponseEntity.noContent().build();
+			return ResponseUtil.message(ResponseCode.NO_DATA_FOUND);
 		} else {
 			log.info("Returning dashboard metrics");
 			return ResponseUtil.data(metrics);
@@ -107,47 +108,50 @@ public class ComputerController {
 			@RequestParam(required = false) String version) {
 		List<CpeName> likelyCpeNames;
 		if (vendor == null || product == null || vendor.trim().isEmpty() || product.trim().isEmpty()) {
-			Map<String, String> responseMessage = new HashMap<>();
-			responseMessage.put("Status", "Vendor and Product cannot be empty!!");
-			return new ResponseEntity<>(responseMessage, HttpStatus.BAD_REQUEST);
+			return ResponseUtil.message(ResponseCode.MISSING_PARAMETER_FOR_LIKELY_CPE_NAME_SEARCH, HttpStatus.BAD_REQUEST);
 		}
 		likelyCpeNames = fuzzySearchTool.searchForLikelyCpeName(vendor, product, version);
-		return new ResponseEntity<>(likelyCpeNames, HttpStatus.OK);
+		if(likelyCpeNames.isEmpty()) {
+			return ResponseUtil.message(ResponseCode.NO_DATA_FOUND);
+		}
+		return ResponseUtil.data(likelyCpeNames);
 	}
 	
 	@PostMapping("/hint/addHint")
 	public ResponseEntity<Object> addApplicationHint(@RequestParam String cpeName,
 			@RequestBody Application application) {
 		int status = vulnerabilityService.addApplicationHint(cpeName, application);
-		log.info("Status: {}", status);
-		String statusMessage = "";
+		ResponseCode code;
+		HttpStatus statusCode;
 		switch (status) {
 		case 1: {
-			statusMessage = "Hint added Successfully!!";
+			code = ResponseCode.HINT_ADDED_SUCCESSFULLY;
+			statusCode = HttpStatus.OK;
 			vulnerabilityService.analyzeAndSaveApplicationVulnerabilitiesAsync(List.of(application));
 			break;
 		}
 		case -1: {
-			statusMessage = "CPE name is not valid!!";
+			code = ResponseCode.CPE_NAME_NOT_VALID;
+			statusCode = HttpStatus.BAD_REQUEST;
 			break;
 		}
 		case -2: {
-			statusMessage = "Error while adding product hint!!";
+			code = ResponseCode.ERROR_ADDING_PRODUCT_HINT;
+			statusCode = HttpStatus.BAD_REQUEST;
 			break;
 		}
 		case -3: {
-			statusMessage = "Error while adding vendor hint!!";
+			code = ResponseCode.ERROR_ADDING_VENDOR_HINT;
+			statusCode = HttpStatus.BAD_REQUEST;
 			break;
 		}
 		default: {
-			statusMessage = "Error while adding dependnecy hint!!";
+			code = ResponseCode.ERROR_ADDING_HINT;
+			statusCode = HttpStatus.BAD_REQUEST;
 			break;
 		}
 		}
-		Map<String, String> responseMessage = new HashMap<>();
-		responseMessage.put("Status", statusMessage);
-		return new ResponseEntity<>(responseMessage, HttpStatus.OK);
-
+		return ResponseUtil.message(code.getCode(), code.getMessage(), statusCode);
 	}
 	
 	@GetMapping("/vulnerableComputers")
@@ -156,7 +160,7 @@ public class ComputerController {
 		List<ComputerResponseDto> vulnerableComputers = computerService.getAllComputersWithVulnerabilities();
 		if (vulnerableComputers.isEmpty()) {
 			log.info("No vulnerable computers found.");
-			return ResponseEntity.noContent().build();
+			return ResponseUtil.message(ResponseCode.NO_DATA_FOUND);
 		}
 		log.info("Returning {} vulnerable computers.", vulnerableComputers.size());
 		return ResponseUtil.data(vulnerableComputers);
@@ -168,13 +172,10 @@ public class ComputerController {
 		if(computerUuid != null && !computerUuid.isEmpty()) {
 			log.debug("Sending notification for computer with UUID: {}", computerUuid);
 			emailService.sendVulnEmailNotification(computerService.getComputerWithVulnerabilitiesByUuid(computerUuid));
-			Map<String, String> responseMessage = new HashMap<>();
-			responseMessage.put("Status", "Notification sent successfully for computer with UUID: " + computerUuid);
-			return new ResponseEntity<>(responseMessage, HttpStatus.OK);
+			return ResponseUtil.message(ResponseCode.NOTIFICATION_SENT_SUCCESSFULLY);
 		}
 		emailService.sendVulnEmailNotifications(computerService.getAllComputersWithVulnerabilities());
-		Map<String, String> responseMessage = new HashMap<>();
-		responseMessage.put("Status", "Notifications sent successfully!!");
-		return new ResponseEntity<>(responseMessage, HttpStatus.OK);
+		return ResponseUtil.message(ResponseCode.NOTIFICATION_SENT_SUCCESSFULLY);
 	}
+	
 }

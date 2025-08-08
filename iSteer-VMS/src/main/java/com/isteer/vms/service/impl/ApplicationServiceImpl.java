@@ -14,9 +14,11 @@ import com.isteer.vms.dao.ApplicationDao;
 import com.isteer.vms.dao.VulnerabilityDao;
 import com.isteer.vms.dto.ApplicationResponseDto;
 import com.isteer.vms.dto.SoftwarePayloadDto;
+import com.isteer.vms.exception.BusinessException;
 import com.isteer.vms.model.Application;
 import com.isteer.vms.model.ApplicationCpeName;
 import com.isteer.vms.model.ComputerApplication;
+import com.isteer.vms.response.ResponseCode;
 import com.isteer.vms.service.ApplicationService;
 import com.isteer.vms.service.VulnerabilityService;
 
@@ -37,7 +39,6 @@ public class ApplicationServiceImpl implements ApplicationService {
 	}
 
 	@Override
-	@Transactional
 	public int createOrUpdateApplication(String computerUuid, List<SoftwarePayloadDto> software) {
 		log.info("Processing applications for computer UUID: {}", computerUuid);
 
@@ -186,7 +187,7 @@ public class ApplicationServiceImpl implements ApplicationService {
 
 		if (status == 0) {
 			log.error("Failed to insert new applications into the database");
-			return Collections.emptyList();
+			throw new BusinessException(ResponseCode.APPLICATION_ERROR.getMessage(), 500);
 		}
 
 		log.info("Successfully inserted {} new applications", applications.size());
