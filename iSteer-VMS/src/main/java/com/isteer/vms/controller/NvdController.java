@@ -17,6 +17,7 @@ import com.isteer.vms.response.ResponseCode;
 import com.isteer.vms.response.ResponseUtil;
 import com.isteer.vms.service.VulnerabilityService;
 
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.log4j.Log4j2;
 
 @RestController
@@ -30,7 +31,8 @@ public class NvdController {
 		this.jobExecutor = jobExecutor;
 		this.vulnerabilityService = vulnerabilityService;
 	}
-
+	
+	@Operation(summary = "Trigger NVD CPE dictionary data update job", description = "This endpoint triggers a background job to update the NVD CPE dictionary data. It returns the unique id for the job that can be used to check the status of the job later.")
 	@GetMapping("/nvd/executeJob/updateCpeDictionary")
 	public ResponseEntity<?> updateCpeDictionary() {
 		Map<String, String> status = new HashMap<>();
@@ -42,7 +44,7 @@ public class NvdController {
 			throw new BusinessException(e.getMessage(), 500);
 		}
 	}
-
+	@Operation(summary = "Check status of the background job.", description = "This endpoint checks the status of a background job using the job ID returned from the job execution endpoint. It returns the current status of the job.")
 	@GetMapping("/nvd/jobStatus")
 	public ResponseEntity<?> getJobStatus(String jobId) {
 		Map<String, String> status = new HashMap<>();
@@ -55,7 +57,8 @@ public class NvdController {
 			throw new BusinessException(e.getMessage(), 500);
 		}
 	}
-
+	
+	@Operation(summary = "Get NVD CVE data", description = "This endpoint retrieves the latest NVD CVE data.")
 	@GetMapping("/search/vulnerability/{searchType}")
 	public ResponseEntity<Object> searchVulnerability(@PathVariable String searchType,
 			@RequestParam(required = false) String searchKeyword, @RequestParam(required = false) String searchCveId,
