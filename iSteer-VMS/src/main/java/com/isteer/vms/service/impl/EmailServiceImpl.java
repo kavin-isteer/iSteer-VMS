@@ -3,12 +3,17 @@ package com.isteer.vms.service.impl;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailException;
+import org.springframework.mail.MailParseException;
+import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessagePreparator;
 import org.springframework.stereotype.Service;
 
 import com.isteer.vms.dto.ApplicationResponseDto;
 import com.isteer.vms.dto.ComputerResponseDto;
+import com.isteer.vms.exception.EmailServiceException;
+import com.isteer.vms.response.ResponseCode;
 import com.isteer.vms.service.EmailService;
 
 import jakarta.mail.internet.InternetAddress;
@@ -31,9 +36,19 @@ public class EmailServiceImpl implements EmailService{
 	public void sendVulnEmailNotification(ComputerResponseDto data) {
 		log.info("Sending vulnerability email notification to computer: {}", data.getMachineName());
 		try {
-			javaMailSender.send(new vulnerabilityEmailPreparator(data, fromEmail));
+			javaMailSender.send(new VulnerabilityEmailPreparator(data, fromEmail));
+		} catch (MailSendException e) { 
+			log.error(e.getMessage());
+			throw new EmailServiceException(ResponseCode.EMAIL_NOT_SENT.getMessage(), 500);
+		} catch (MailParseException e) { 
+			log.error(e.getMessage());
+			throw new EmailServiceException(ResponseCode.INVALID_EMAIL.getMessage(), 400);
+		} catch (MailException e) { 
+			log.error(e.getMessage());
+			throw new EmailServiceException(ResponseCode.INTERNAL_ERROR.getMessage(), 500);
 		} catch (Exception e) { 
 			log.error(e.getMessage());
+			throw new EmailServiceException(ResponseCode.INTERNAL_ERROR.getMessage(), 500);
 		}
 		
 	}
@@ -43,29 +58,38 @@ public class EmailServiceImpl implements EmailService{
 		log.info("Sending vulnerability email notifications to {} computers", data.size());
 		for(ComputerResponseDto computer : data) {
 			try {
-				javaMailSender.send(new vulnerabilityEmailPreparator(computer,fromEmail));
+				javaMailSender.send(new VulnerabilityEmailPreparator(computer,fromEmail));
+			} catch (MailSendException e) { 
+				log.error(e.getMessage());
+				throw new EmailServiceException(ResponseCode.EMAIL_NOT_SENT.getMessage(), 500);
+			} catch (MailParseException e) { 
+				log.error(e.getMessage());
+				throw new EmailServiceException(ResponseCode.INVALID_EMAIL.getMessage(), 400);
+			} catch (MailException e) { 
+				log.error(e.getMessage());
+				throw new EmailServiceException(ResponseCode.INTERNAL_ERROR.getMessage(), 500);
 			} catch (Exception e) {
 				log.error(e.getMessage());
-				
+				throw new EmailServiceException(ResponseCode.INTERNAL_ERROR.getMessage(), 500);
 			}
 		}
 		
 	}
 }
 
-class vulnerabilityEmailPreparator implements MimeMessagePreparator{
+class VulnerabilityEmailPreparator implements MimeMessagePreparator{
 	
 	private String fromEmail;
 	private String toEmail;
 	private String subject = "Urgent Action Required: Vulnerabilities Detected on your Computer";
 	private String emailBody;
 	
-	public vulnerabilityEmailPreparator(ComputerResponseDto data, String fromEmail) {
+	public VulnerabilityEmailPreparator(ComputerResponseDto data, String fromEmail) {
 		 String appRows = generateApplicationRows(data.getApplicationDetails());
 		 this.fromEmail = fromEmail;
 //		 this.toEmail = data.getUserEmail();
 //		 this.toEmail = "kavin.kr@isteer.com";
-//		 this.toEmail = "ponvasanth71@gmail.com";
+		 this.toEmail = "ponvasanth.rangasamy@isteer.com";
 		 this.emailBody = "<html>\n" +
 	                "  <body style=\"font-family: Arial, sans-serif; line-height: 1.6; color: #333;\">\n" +
 	                "    <p>Dear " + data.getLoggedInUser() + ",</p>\n" +

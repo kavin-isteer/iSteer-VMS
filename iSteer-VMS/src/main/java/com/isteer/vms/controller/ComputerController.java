@@ -1,8 +1,6 @@
 package com.isteer.vms.controller;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +17,6 @@ import com.isteer.vms.core.engine.model.CpeName;
 import com.isteer.vms.dto.ComputerPayloadDto;
 import com.isteer.vms.dto.ComputerResponseDto;
 import com.isteer.vms.dto.DashboardMetricsDto;
-import com.isteer.vms.exception.NvdApiException;
 import com.isteer.vms.model.Application;
 import com.isteer.vms.model.Computer;
 import com.isteer.vms.response.ResponseCode;

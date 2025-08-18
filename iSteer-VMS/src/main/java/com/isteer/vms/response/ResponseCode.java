@@ -24,6 +24,8 @@ public enum ResponseCode {
 	ERROR_ADDING_PRODUCT_HINT(9010, "Error while adding product hint!!"),
 	ERROR_ADDING_VENDOR_HINT(9011, "Error while adding vendor hint!!"),
 	ERROR_ADDING_HINT(9012, "Error while adding hint!!"),
+	INVALID_EMAIL(9013, "Email address is not valid."),
+	EMAIL_NOT_SENT(9014, "Email could not be sent. Please try again later."),
 	INTERNAL_ERROR(9999, "Internal server error. Please try again later.");
 	
 	private final int code;
