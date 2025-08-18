@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import com.isteer.vms.exception.BusinessException;
+import com.isteer.vms.exception.EmailServiceException;
 import com.isteer.vms.exception.NvdApiException;
 import com.isteer.vms.response.ResponseCode;
 import com.isteer.vms.response.ResponseUtil;
@@ -19,12 +20,17 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(BusinessException.class)
 	public ResponseEntity<Object> handleBusinessException(BusinessException ex) {
-		return ResponseUtil.message(9010, ex.getMessage(), HttpStatus.valueOf(ex.getStatusCode()));
+		return ResponseUtil.message(9000, ex.getMessage(), HttpStatus.valueOf(ex.getStatusCode()));
 	}
 	
 	@ExceptionHandler(NvdApiException.class)
 	public ResponseEntity<Object> handleNvdApiExcption(NvdApiException ex) {
-		return ResponseUtil.message(9009, ex.getMessage(), HttpStatus.valueOf(ex.getStatusCode()));
+		return ResponseUtil.message(9000, ex.getMessage(), HttpStatus.valueOf(ex.getStatusCode()));
+	}
+	
+	@ExceptionHandler(EmailServiceException.class)
+	public ResponseEntity<Object> handleEmailServiceException(EmailServiceException ex) {
+		return ResponseUtil.message(9000, ex.getMessage(), HttpStatus.valueOf(ex.getStatusCode()));
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
