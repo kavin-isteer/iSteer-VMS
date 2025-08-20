@@ -39,15 +39,6 @@ public interface ComputerService {
      */
 	int createOrUpdateComputer(ComputerPayloadDto computer);
 
-	/**
-	 * Retrieves a list of all computers.
-	 * @param status 
-	 * 
-	 * @return A list of {@link Computer} objects representing all computers in the system.
-	 * 
-	 */
-	List<Computer> getAllComnputers(String status);
-
 	DashboardMetricsDto getDashboardMetrics();
 	
 	List<ComputerResponseDto> getAllComputersWithVulnerabilities();
