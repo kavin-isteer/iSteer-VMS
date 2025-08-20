@@ -145,16 +145,6 @@ public class ComputerServiceImpl implements ComputerService {
 	}
 
 	@Override
-	public List<Computer> getAllComnputers(String status) {
-		if (status != null && !status.isEmpty()) {
-			log.info("Fetching all computers from the database with active status {}", status);
-			return computerDao.getAllComputers(status);
-		}
-		log.info("Fetching all computers from the database.");
-		return computerDao.getAllComputers();
-	}
-
-	@Override
 	public DashboardMetricsDto getDashboardMetrics() {
 		log.info("Loading Dashboard Metrics...");
 		Map<String, Integer> installedVulnerableAppCounts = applicationDao.getInstalledVulnerableAppCounts();
