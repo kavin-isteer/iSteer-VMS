@@ -14,7 +14,7 @@ public class SwaggerConfiguration {
 	  public OpenAPI springShopOpenAPI() {
 	      return new OpenAPI()
 	              .info(new Info().title("Vulnerability Management System API")
-	              .description("Spring shop sample application")
+	              .description("Rest API endpoints for isteer Vulnerability Management System")
 	              .version("v0.0.1"));
 	  }
 }
