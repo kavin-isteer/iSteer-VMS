@@ -19,6 +19,7 @@ public class ApplicationResponseDto {
 	private String softwareName;
 	private String softwareVersion;
 	private String vendor;
+	private List<Integer> runningProcessIds;
 	private String cpeName;
 	private boolean isResolved;
 	@Builder.Default

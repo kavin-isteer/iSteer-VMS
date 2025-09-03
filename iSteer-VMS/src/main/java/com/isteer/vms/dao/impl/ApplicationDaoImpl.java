@@ -75,7 +75,7 @@ public class ApplicationDaoImpl implements ApplicationDao {
 	@Override
 	public List<ComputerApplication> getApplicationsByComputerUuid(String computerUuid) {
 		log.debug("Fetching applications for computer UUID: {}", computerUuid);
-		String query = "SELECT ca.uuid, ca.application_uuid, ca.computer_uuid, a.name, a.version, a.vendor_name, ca.installed_date, ca.is_deleted, ca.created_at, ca.updated_at "
+		String query = "SELECT ca.uuid, ca.application_uuid, ca.computer_uuid, a.name, a.version, a.vendor_name, ca.installed_date, ca.process_ids, ca.is_deleted, ca.created_at, ca.updated_at "
 				+ "FROM computer_applications ca " + "JOIN applications a ON ca.application_uuid = a.uuid "
 				+ "WHERE ca.computer_uuid = :computerUuid AND ca.is_deleted = false";
 		MapSqlParameterSource params = new MapSqlParameterSource();
