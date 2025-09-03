@@ -28,7 +28,6 @@ import lombok.extern.log4j.Log4j2;
 
 @RestController
 @Log4j2
-@RequestMapping("/api")
 public class NvdController {
 	private JobExecuter jobExecutor;
 	private VulnerabilityService vulnerabilityService;
