@@ -1,5 +1,6 @@
 package com.isteer.vms.dto;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import lombok.Builder;
@@ -22,6 +23,7 @@ public class ComputerResponseDto {
 	private String firewallStatus;
 	private String loggedInUserName;
 	private String loggedInUserEmail;
+	private LocalDateTime updatedAt;
 	@Builder.Default
 	private int installedSoftwareCount = 0;
 	@Builder.Default
