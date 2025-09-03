@@ -1,6 +1,7 @@
 package com.isteer.vms.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Builder;
@@ -20,4 +21,5 @@ public class SoftwarePayloadDto {
 	private String softwareVersion;
 	private String vendorName;
 	private LocalDateTime installedDate;
+	private List<Integer> runningProcessIds;
 }

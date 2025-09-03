@@ -354,7 +354,7 @@ public class NvdClient {
 	 */
 	private List<VulnerabilityCvssMetrics> processCvssMetrics(Map<String, Object> metricMap) {
 		log.debug("Processing CVSS metrics from the CVE API response...");
-		String[] metricTypes = { "cvssMetricV31", "cvssMetricV4", "cvssMetricV2" };
+		String[] metricTypes = { "cvssMetricV31", "cvssMetricV4", "cvssMetricV2", "cvssMetricV30"};
 		List<VulnerabilityCvssMetrics> parsedCvssMetrics = new ArrayList<>();
 		try {
 			for (String metricType : metricTypes) {

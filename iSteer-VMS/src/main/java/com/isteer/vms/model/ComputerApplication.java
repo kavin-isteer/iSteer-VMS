@@ -1,6 +1,7 @@
 package com.isteer.vms.model;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import lombok.Builder;
 import lombok.Data;
@@ -20,6 +21,7 @@ public class ComputerApplication {
 	private String softwareVersion;
 	private String vendorName;
 	private LocalDateTime installedDate;
+	private List<Integer> processIds;
 	@Builder.Default
 	private boolean isDeleted = false;
 	private LocalDateTime createdAt;

@@ -9,6 +9,8 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.isteer.vms.dao.ApplicationDao;
 import com.isteer.vms.dao.rowmapper.ApplicationRowMapper;
 import com.isteer.vms.dao.rowmapper.ComputerApplicationRowMapper;
@@ -149,7 +151,8 @@ public class ApplicationDaoImpl implements ApplicationDao {
 				computerApplications.size());
 		String query = "UPDATE computer_applications SET is_deleted = :isDeleted WHERE uuid = :uuid";
 		MapSqlParameterSource[] batchParams = computerApplications.stream().map(app -> new MapSqlParameterSource()
-				.addValue("uuid", app.getUuid()).addValue("isDeleted", app.isDeleted()))
+				.addValue("uuid", app.getUuid()).addValue("isDeleted", app.isDeleted())
+				.addValue("processIds", app.getProcessIds() == null ? "[]" : toJsonString(app.getProcessIds())))
 				.toArray(MapSqlParameterSource[]::new);
 		try {
 		int[] status = namedParameterJdbcTemplate.batchUpdate(query, batchParams);
@@ -209,5 +212,45 @@ public class ApplicationDaoImpl implements ApplicationDao {
 			return List.of();
 		}
 	}
+	
+	@Override
+	public void updateProcessIdsBatch(List<ComputerApplication> compAppsToUpdate) {
+		log.debug("Updating process IDs for {} computer applications in batch", compAppsToUpdate.size());
+		String query = "UPDATE computer_applications SET process_ids = :processIds WHERE computer_uuid = :computerUuid"
+				+ " AND application_uuid = :applicationUuid AND (process_ids IS NULL OR process_ids != :processIds)";
+		
+		MapSqlParameterSource[] params = compAppsToUpdate.stream()
+				.map(app -> new MapSqlParameterSource()
+						.addValue("computerUuid", app.getComputerUuid())
+						.addValue("applicationUuid", app.getApplicationUuid())
+						.addValue("processIds", toJsonString(app.getProcessIds())))
+				.toArray(MapSqlParameterSource[]::new);
+		try {
+			int[] status = namedParameterJdbcTemplate.batchUpdate(query, params);
+			for (int i : status) {
+				if (i == 0) {
+					log.warn("Failed to update process IDs for a computer application, status: {}", i);
+					return;
+				}
+			}
+			log.debug("Successfully updated process IDs for {} computer applications", compAppsToUpdate.size());
+		} catch (Exception e) {
+			log.error("Error updating process IDs for computer applications: {}", e.getMessage());
+		}
+	}
+	
+	private String toJsonString(List<Integer> processIds) {
+		if (processIds == null || processIds.isEmpty()) {
+			return "[]"; // return empty JSON array
+		}
+		try {
+			ObjectMapper objectMapper = new ObjectMapper();
+			return objectMapper.writeValueAsString(processIds);
+		} catch (JsonProcessingException e) {
+			log.error("Error converting process IDs to JSON", e);
+			return "[]";
+		}
+	}
+
 
 }

@@ -42,8 +42,9 @@ public class ComputerPayloadDto {
 	@NotBlank(message = "Firewall status cannot be blank")
 	private String firewallStatus;
 	
-	@NotBlank(message = "Logged in user cannot be blank")
-	private String loggedInUser;
+	@NotNull(message = "Logged in user cannot be blank")
+	@Valid
+	private LoggedInUserDto loggedInUser;
 	
 	@NotEmpty(message = "Installed softwares cannot be blank")
 	@Valid
@@ -90,10 +91,10 @@ public class ComputerPayloadDto {
 	public void setFirewallStatus(String firewallStatus) {
 		this.firewallStatus = firewallStatus;
 	}
-	public String getLoggedInUser() {
+	public LoggedInUserDto getLoggedInUser() {
 		return loggedInUser;
 	}
-	public void setLoggedInUser(String loggedInUser) {
+	public void setLoggedInUser(LoggedInUserDto loggedInUser) {
 		this.loggedInUser = loggedInUser;
 	}
 	public List<SoftwarePayloadDto> getInstalledSoftwares() {

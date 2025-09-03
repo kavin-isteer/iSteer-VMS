@@ -24,4 +24,6 @@ public interface ApplicationDao {
 
 	List<Application> getUnresolvedApplications();
 
+	void updateProcessIdsBatch(List<ComputerApplication> compAppsToUpdate);
+
 }

@@ -1,5 +1,6 @@
 package com.isteer.vms.service.impl;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -8,7 +9,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.isteer.vms.dao.ApplicationDao;
 import com.isteer.vms.dao.VulnerabilityDao;
@@ -65,7 +65,34 @@ public class ApplicationServiceImpl implements ApplicationService {
 		int activated = handleActivatedApplications(software, existingCompApps);
 		int mapped = handleNewMappings(computerUuid, software, existingApps, appKeys, compAppKeys);
 
+		updateProcessIdsForComputerApplications(computerUuid, software, existingApps);
 		return determineFinalStatus(mapped, deleted, activated);
+	}
+
+	private void updateProcessIdsForComputerApplications(String computerUuid, List<SoftwarePayloadDto> software,
+			List<Application> existingApps) {
+		
+		Map<String, String> keyToAppUuid = existingApps.stream()
+		        .collect(Collectors.toMap(app -> key(app), Application::getUuid));
+		
+		 List<ComputerApplication> compAppsToUpdate = new ArrayList<>();
+
+		    for (SoftwarePayloadDto s : software) {
+		        String appUuid = keyToAppUuid.get(key(s));
+		        if (appUuid != null) {
+		            ComputerApplication compApp = ComputerApplication.builder()
+		            		.computerUuid(computerUuid)
+		            		.applicationUuid(appUuid)
+		            		.processIds(s.getRunningProcessIds())
+		            		.build();
+		            compAppsToUpdate.add(compApp);
+		        }
+		    }
+		    
+		    if (!compAppsToUpdate.isEmpty()) {
+		        applicationDao.updateProcessIdsBatch(compAppsToUpdate);
+		    }
+		    
 	}
 
 	private Set<String> toKeySet(List<? extends Application> apps) {
@@ -86,6 +113,7 @@ public class ApplicationServiceImpl implements ApplicationService {
 	        .filter(ca -> !ca.isDeleted() && software.stream().noneMatch(s -> key(s).equals(key(ca))))
 	        .map(ca -> {
 	            ca.setDeleted(true);
+	            ca.setProcessIds(null);
 	            return ca;
 	        })
 	        .toList();
@@ -143,7 +171,9 @@ public class ApplicationServiceImpl implements ApplicationService {
 
 	private void mergeInstalledDates(List<ComputerApplication> mappedApps, List<SoftwarePayloadDto> software) {
 		mappedApps.forEach(app -> software.stream().filter(s -> key(s).equals(key(app))).findFirst()
-				.ifPresent(s -> app.setInstalledDate(s.getInstalledDate())));
+				.ifPresent(s -> { app.setInstalledDate(s.getInstalledDate());
+				app.setProcessIds(s.getRunningProcessIds());
+				}));
 	}
 
 	private int determineFinalStatus(int mapped, int deleted, int activated) {
