@@ -175,6 +175,7 @@ public class ComputerServiceImpl implements ComputerService {
 					.firewallStatus(computer.getFirewallStatus()).loggedInUserName(computer.getLoggedinUserName())
 					.loggedInUserEmail(computer.getLoggedInUserEmail())
 					.updatedAt(computer.getUpdatedAt())
+					.createdAt(computer.getCreatedAt())
 					.installedSoftwareCount(installedAppCounts.getOrDefault(computer.getUuid(), 0))
 					.vulnerableSoftwareCount(vulnerableAppCounts.getOrDefault(computer.getUuid(), 0))
 					.criticalVulnerableApplicationCount(severityCountMap.getOrDefault("CRITICAL", 0))
