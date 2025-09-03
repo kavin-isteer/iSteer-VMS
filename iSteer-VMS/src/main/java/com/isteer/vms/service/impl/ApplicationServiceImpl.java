@@ -260,6 +260,7 @@ public class ApplicationServiceImpl implements ApplicationService {
 							.softwareName(app.getSoftwareName())
 							.vendor(app.getVendorName())
 							.softwareVersion(app.getSoftwareVersion())
+							.runningProcessIds(app.getProcessIds())
 							.cpeName(cpeName != null ? cpeName.getCpeName() : null)
 							.isResolved(cpeName != null ? cpeName.isResolvedCpe() : false)
 							.criticalVulnerabilityCount(severityCountMap.getOrDefault("CRITICAL", 0))
