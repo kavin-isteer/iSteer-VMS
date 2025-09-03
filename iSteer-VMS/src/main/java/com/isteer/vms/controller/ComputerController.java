@@ -18,7 +18,6 @@ import com.isteer.vms.dto.ComputerPayloadDto;
 import com.isteer.vms.dto.ComputerResponseDto;
 import com.isteer.vms.dto.DashboardMetricsDto;
 import com.isteer.vms.model.Application;
-import com.isteer.vms.model.Computer;
 import com.isteer.vms.response.BaseResponse;
 import com.isteer.vms.response.ResponseCode;
 import com.isteer.vms.response.ResponseUtil;
@@ -70,6 +69,7 @@ public class ComputerController {
 	public ResponseEntity<Object> createComputer(@Valid @RequestBody ComputerPayloadDto computer) {
 		log.info("Received request to create or update computer with deviceId: {}", computer.getDeviceId());
 		int status = computerService.createOrUpdateComputer(computer);
+
 		switch (status) {
 		case 0:
 			return ResponseUtil.message(ResponseCode.NO_CHANGES_MADE);
@@ -92,6 +92,7 @@ public class ComputerController {
 		default:
 			return ResponseUtil.message(ResponseCode.DEFAULT_ERROR);
 		}
+
 	}
 
 	@Operation(summary = "Get all computers and their details", description = "This endpoint retrieves a list of all computers and their details. It returns a DashboardMetricsDto object containing the metrics of all computers, including the total number of computers, the number of computers with vulnerabilities, the number of vulnerable applications, and the number of vulnerabilities by severity.", responses = {
@@ -116,11 +117,10 @@ public class ComputerController {
 			+ "If the vendor or product is missing, it returns a bad request response. "
 			+ "If no likely CPE names are found, it returns a not found response. "
 			+ "If successful, it returns a list of CpeName objects.", responses = {
-				@ApiResponse( responseCode = "200", description = "Likely CPE names retrieved Successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CpeName.class))),
-				@ApiResponse(responseCode = "400", description = "Bad Request - Missing vendor or product parameter", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BaseResponse.class))),
-				@ApiResponse(responseCode = "404", description = "No Data Found - No likely CPE names found", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BaseResponse.class))),
-				@ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BaseResponse.class)))
-			})
+					@ApiResponse(responseCode = "200", description = "Likely CPE names retrieved Successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = CpeName.class))),
+					@ApiResponse(responseCode = "400", description = "Bad Request - Missing vendor or product parameter", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BaseResponse.class))),
+					@ApiResponse(responseCode = "404", description = "No Data Found - No likely CPE names found", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BaseResponse.class))),
+					@ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BaseResponse.class))) })
 	@GetMapping("hint/likelyCpeNames")
 	public ResponseEntity<Object> getLikelyCpeNames(@RequestParam String vendor, @RequestParam String product,
 			@RequestParam(required = false) String version) {
@@ -142,11 +142,10 @@ public class ComputerController {
 			+ "including whether the hint was added successfully, "
 			+ "if the CPE name is not valid, or if there was an error during the operation. "
 			+ "It also triggers an asynchronous analysis of the application vulnerabilities if the hint is added successfully.", responses = {
-				@ApiResponse(responseCode = "200", description = "Hint added successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BaseResponse.class))),
-				@ApiResponse(responseCode = "400", description = "Bad Request - Invalid CPE name or error adding hint", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BaseResponse.class))),
-				@ApiResponse(responseCode = "500", description = "Internal Server Error - Error adding hint", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BaseResponse.class))),
-				@ApiResponse(responseCode = "404", description = "Not Found - CPE name not valid", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BaseResponse.class)))
-			})
+					@ApiResponse(responseCode = "200", description = "Hint added successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BaseResponse.class))),
+					@ApiResponse(responseCode = "400", description = "Bad Request - Invalid CPE name or error adding hint", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BaseResponse.class))),
+					@ApiResponse(responseCode = "500", description = "Internal Server Error - Error adding hint", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BaseResponse.class))),
+					@ApiResponse(responseCode = "404", description = "Not Found - CPE name not valid", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BaseResponse.class))) })
 	@PostMapping("/hint/addHint")
 	public ResponseEntity<Object> addApplicationHint(@RequestParam String cpeName,
 			@RequestBody Application application) {
@@ -188,10 +187,9 @@ public class ComputerController {
 			+ "It returns a list of ComputerResponseDto objects containing the details of each vulnerable computer. "
 			+ "If no vulnerable computers are found, it returns a not found response. "
 			+ "If successful, it returns a list of vulnerable computers.", responses = {
-				@ApiResponse(responseCode = "200", description = "Vulnerable computers retrieved successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ComputerResponseDto.class))),
-				@ApiResponse(responseCode = "404", description = "No Data Found - No vulnerable computers found", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BaseResponse.class))),
-				@ApiResponse(responseCode = "500", description = "Internal Server Error", content =@Content(mediaType = "application/json", schema = @Schema(implementation = BaseResponse.class)))
-			})
+					@ApiResponse(responseCode = "200", description = "Vulnerable computers retrieved successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ComputerResponseDto.class))),
+					@ApiResponse(responseCode = "404", description = "No Data Found - No vulnerable computers found", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BaseResponse.class))),
+					@ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BaseResponse.class))) })
 	@GetMapping("/vulnerableComputers")
 	public ResponseEntity<Object> getVulnerableComputers() {
 		log.info("Received request to fetch all vulnerable computers.");
@@ -208,16 +206,16 @@ public class ComputerController {
 			+ "You can specify a computer UUID to send a notification for a specific computer, "
 			+ "or leave it empty to send notifications for all vulnerable computers. "
 			+ "The response will indicate whether the notifications were sent successfully or not.", responses = {
-				@ApiResponse(responseCode = "200", description = "Notifications sent successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BaseResponse.class))),
-				@ApiResponse(responseCode = "400", description = "Bad request - Invalid computer UUID", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BaseResponse.class))),
-				@ApiResponse(responseCode = "500", description = "Internal Server Error - Error sending notifications", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BaseResponse.class)))
-			})
+					@ApiResponse(responseCode = "200", description = "Notifications sent successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BaseResponse.class))),
+					@ApiResponse(responseCode = "400", description = "Bad request - Invalid computer UUID", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BaseResponse.class))),
+					@ApiResponse(responseCode = "500", description = "Internal Server Error - Error sending notifications", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BaseResponse.class))) })
 	@GetMapping({ "/sendNotifications/{computerUuid}", "/sendNotifications" })
 	public ResponseEntity<Object> sendNotifications(@PathVariable(required = false) String computerUuid) {
 		log.info("Received request to send notifications.");
 		if (computerUuid != null && !computerUuid.isEmpty()) {
 			log.debug("Sending notification for computer with UUID: {}", computerUuid);
 			emailService.sendVulnEmailNotification(computerService.getComputerWithVulnerabilitiesByUuid(computerUuid));
+			
 			return ResponseUtil.message(ResponseCode.NOTIFICATION_SENT_SUCCESSFULLY);
 		}
 		emailService.sendVulnEmailNotifications(computerService.getAllComputersWithVulnerabilities());

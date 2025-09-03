@@ -88,7 +88,8 @@ public class ComputerServiceImpl implements ComputerService {
 	private Computer updateExistingComputer(Computer existing, ComputerPayloadDto dto) {
 		Computer updated = existing.toBuilder().machineName(dto.getMachineName()).ipAddress(dto.getIpAddress())
 				.osVersion(dto.getOsVersion()).antiVirusStatus(dto.getAntivirusStatus())
-				.firewallStatus(dto.getFirewallStatus()).loggedinUser(dto.getLoggedInUser())
+				.firewallStatus(dto.getFirewallStatus()).loggedinUserName(dto.getLoggedInUser().getUserName())
+				.loggedInUserEmail(dto.getLoggedInUser().getUserEmail())
 				.lastUpdateCheck(dto.getLastUpdateCheck()).timestamp(dto.getTimestamp()).build();
 		existing.updatedAtNow();
 		return updated;
@@ -98,7 +99,7 @@ public class ComputerServiceImpl implements ComputerService {
 		return Computer.builder().uuid(UUID.randomUUID().toString()).deviceId(dto.getDeviceId())
 				.machineName(dto.getMachineName()).ipAddress(dto.getIpAddress()).osVersion(dto.getOsVersion())
 				.antiVirusStatus(dto.getAntivirusStatus()).firewallStatus(dto.getFirewallStatus())
-				.loggedinUser(dto.getLoggedInUser()).lastUpdateCheck(dto.getLastUpdateCheck())
+				.loggedinUserName(dto.getLoggedInUser().getUserName()).loggedInUserEmail(dto.getLoggedInUser().getUserEmail()).lastUpdateCheck(dto.getLastUpdateCheck())
 				.timestamp(dto.getTimestamp()).build();
 	}
 
@@ -129,7 +130,8 @@ public class ComputerServiceImpl implements ComputerService {
 				&& isEqual(existing.getOsVersion(), payload.getOsVersion())
 				&& isEqual(existing.getAntiVirusStatus(), payload.getAntivirusStatus())
 				&& isEqual(existing.getFirewallStatus(), payload.getFirewallStatus())
-				&& isEqual(existing.getLoggedinUser(), payload.getLoggedInUser())
+				&& isEqual(existing.getLoggedinUserName(), payload.getLoggedInUser().getUserName())
+				&& isEqual(existing.getLoggedInUserEmail(), payload.getLoggedInUser().getUserEmail())
 				&& isEqual(existing.getLastUpdateCheck(), payload.getLastUpdateCheck())
 				&& isTimestampEqual(existing.getTimestamp(), payload.getTimestamp());
 	}
@@ -170,7 +172,8 @@ public class ComputerServiceImpl implements ComputerService {
 			return ComputerResponseDto.builder().uuid(computer.getUuid()).deviceId(computer.getDeviceId())
 					.machineName(computer.getMachineName()).ipAddress(computer.getIpAddress())
 					.osVersion(computer.getOsVersion()).antivirusStatus(computer.getAntiVirusStatus())
-					.firewallStatus(computer.getFirewallStatus()).loggedInUser(computer.getLoggedinUser())
+					.firewallStatus(computer.getFirewallStatus()).loggedInUserName(computer.getLoggedinUserName())
+					.loggedInUserEmail(computer.getLoggedInUserEmail())
 					.installedSoftwareCount(installedAppCounts.getOrDefault(computer.getUuid(), 0))
 					.vulnerableSoftwareCount(vulnerableAppCounts.getOrDefault(computer.getUuid(), 0))
 					.criticalVulnerableApplicationCount(severityCountMap.getOrDefault("CRITICAL", 0))

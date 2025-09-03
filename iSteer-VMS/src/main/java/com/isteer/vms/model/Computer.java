@@ -21,7 +21,8 @@ public class Computer {
 	private String osVersion;
 	private String antiVirusStatus;
 	private String firewallStatus;
-	private String loggedinUser;
+	private String loggedinUserName;
+	private String loggedInUserEmail;
 	private LocalDateTime lastUpdateCheck;
 	private LocalDateTime timestamp;
 	@Builder.Default

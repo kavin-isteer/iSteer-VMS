@@ -36,7 +36,7 @@ public class ComputerDaoImpl implements ComputerDao {
 
 	@Override
 	public List<Computer> getAllComputers() {
-		String query = "SELECT id, uuid, device_id, hostname, ip_address, os_version, antivirus_status, firewall_status, logged_in_user, last_update_check, timestamp, is_deleted, is_active, created_at, updated_at FROM computers WHERE is_deleted = false AND is_active = true";
+		String query = "SELECT id, uuid, device_id, hostname, ip_address, os_version, antivirus_status, firewall_status, logged_in_user_name, logged_in_user_email, last_update_check, timestamp, is_deleted, is_active, created_at, updated_at FROM computers WHERE is_deleted = false AND is_active = true";
 		log.debug("Fetching all computers from the database");
 		try {
 			return jdbcTemplate.query(query, new ComputerRowMapper());
@@ -63,7 +63,7 @@ public class ComputerDaoImpl implements ComputerDao {
 	@Override
 	public Optional<Computer> getComputerByDeviceId(String deviceId) {
 		log.debug("Fetching computer with deviceId: {}", deviceId);
-		String query = "SELECT id, uuid, device_id, hostname, ip_address, os_version, antivirus_status, firewall_status, logged_in_user, last_update_check, timestamp, is_deleted, is_active, created_at, updated_at FROM computers WHERE device_id = :deviceId";
+		String query = "SELECT id, uuid, device_id, hostname, ip_address, os_version, antivirus_status, firewall_status, logged_in_user_name, logged_in_user_email, last_update_check, timestamp, is_deleted, is_active, created_at, updated_at FROM computers WHERE device_id = :deviceId";
 
 		MapSqlParameterSource params = new MapSqlParameterSource();
 		params.addValue("deviceId", deviceId);
@@ -82,11 +82,11 @@ public class ComputerDaoImpl implements ComputerDao {
 	@Override
 	public int createOrUpdateComputer(Computer computer) {
 		log.debug("Creating or updating computer with deviceId: {}", computer.getDeviceId());
-		String query = "INSERT INTO computers (uuid, device_id, hostname, ip_address, os_version, antivirus_status, firewall_status, logged_in_user, last_update_check, timestamp, is_deleted, is_active) "
-				+ "VALUES (:uuid, :deviceId, :machineName, :ipAddress, :osVersion, :antivirusStatus, :firewallStatus, :loggedInUser, :lastUpdateCheck, :timestamp, :isDeleted, :isActive) "
+		String query = "INSERT INTO computers (uuid, device_id, hostname, ip_address, os_version, antivirus_status, firewall_status, logged_in_user_name, logged_in_user_email, last_update_check, timestamp, is_deleted, is_active) "
+				+ "VALUES (:uuid, :deviceId, :machineName, :ipAddress, :osVersion, :antivirusStatus, :firewallStatus, :loggedInUserName, :loggedInUserEmail, :lastUpdateCheck, :timestamp, :isDeleted, :isActive) "
 				+ "ON DUPLICATE KEY UPDATE " + "hostname = :machineName, " + "ip_address = :ipAddress, "
 				+ "os_version = :osVersion, " + "antivirus_status = :antivirusStatus, "
-				+ "firewall_status = :firewallStatus, " + "logged_in_user = :loggedInUser, "
+				+ "firewall_status = :firewallStatus, " + "logged_in_user_name = :loggedInUserName, logged_in_user_email = :loggedInUserEmail, "
 				+ "last_update_check = :lastUpdateCheck, " + "timestamp = :timestamp, " + "is_deleted = :isDeleted, "
 				+ "is_active = :isActive ";
 		MapSqlParameterSource params = new MapSqlParameterSource();
@@ -97,7 +97,8 @@ public class ComputerDaoImpl implements ComputerDao {
 		params.addValue("osVersion", computer.getOsVersion());
 		params.addValue("antivirusStatus", computer.getAntiVirusStatus());
 		params.addValue("firewallStatus", computer.getFirewallStatus());
-		params.addValue("loggedInUser", computer.getLoggedinUser());
+		params.addValue("loggedInUserName", computer.getLoggedinUserName());
+		params.addValue("loggedInUserEmail", computer.getLoggedInUserEmail());
 		params.addValue("lastUpdateCheck", computer.getLastUpdateCheck());
 		params.addValue("timestamp", computer.getTimestamp());
 		params.addValue("isDeleted", computer.isDeleted());
@@ -188,7 +189,8 @@ public class ComputerDaoImpl implements ComputerDao {
 			    "cmp.uuid AS computer_uuid, " +
 			    "cmp.hostname, " +
 			    "cmp.ip_address, " +
-			    "cmp.logged_in_user, " +
+			    "cmp.logged_in_user_name, " +
+			    "cmp.logged_in_user_email, " +
 			    "a.uuid AS application_uuid, " +
 			    "a.name, " +
 			    "a.version, " +
@@ -253,7 +255,8 @@ public class ComputerDaoImpl implements ComputerDao {
 							.uuid(computerUuid)
 							.machineName(rs.getString("hostname"))
 							.ipAddress(rs.getString("ip_address"))
-							.loggedInUser(rs.getString("logged_in_user"))
+							.loggedInUserName(rs.getString("logged_in_user_name"))
+							.loggedInUserEmail(rs.getString("logged_in_user_email"))
 							.applicationDetails(appDetails)
 							.build();
 					dtoMap.put(computerUuid, computerDto);
@@ -271,7 +274,8 @@ public class ComputerDaoImpl implements ComputerDao {
 			    "cmp.uuid AS computer_uuid, " +
 			    "cmp.hostname, " +
 			    "cmp.ip_address, " +
-			    "cmp.logged_in_user, " +
+			    "cmp.logged_in_user_name, " +
+			    "cmp.logged_in_user_email, " +
 			    "a.uuid AS application_uuid, " +
 			    "a.name, " +
 			    "a.version, " +
@@ -297,7 +301,8 @@ public class ComputerDaoImpl implements ComputerDao {
 			    "cmp.uuid, " +
 			    "cmp.hostname, " +
 			    "cmp.ip_address, " +
-			    "cmp.logged_in_user, " +
+			    "cmp.logged_in_user_name, " +
+			    "cmp.logged_in_user_email, " +
 			    "a.uuid, " +
 			    "a.name, " +
 			    "a.version, " +
@@ -340,7 +345,8 @@ public class ComputerDaoImpl implements ComputerDao {
 							.uuid(computerUuid)
 							.machineName(rs.getString("hostname"))
 							.ipAddress(rs.getString("ip_address"))
-							.loggedInUser(rs.getString("logged_in_user"))
+							.loggedInUserName(rs.getString("logged_in_user_name"))
+							.loggedInUserEmail(rs.getString("logged_in_user_email"))
 							.applicationDetails(appDetails)
 							.build();
 					dtoMap.put(computerUuid, computerDto);

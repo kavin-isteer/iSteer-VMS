@@ -37,6 +37,7 @@ public class EmailServiceImpl implements EmailService{
 		log.info("Sending vulnerability email notification to computer: {}", data.getMachineName());
 		try {
 			javaMailSender.send(new VulnerabilityEmailPreparator(data, fromEmail));
+			log.info("Vulnerability email sent successfully to {}", data.getLoggedInUserName());
 		} catch (MailSendException e) { 
 			log.error(e.getMessage());
 			throw new EmailServiceException(ResponseCode.EMAIL_NOT_SENT.getMessage(), 500);
@@ -87,17 +88,17 @@ class VulnerabilityEmailPreparator implements MimeMessagePreparator{
 	public VulnerabilityEmailPreparator(ComputerResponseDto data, String fromEmail) {
 		 String appRows = generateApplicationRows(data.getApplicationDetails());
 		 this.fromEmail = fromEmail;
-//		 this.toEmail = data.getUserEmail();
+		 this.toEmail = data.getLoggedInUserEmail();
 //		 this.toEmail = "kavin.kr@isteer.com";
-		 this.toEmail = "ponvasanth.rangasamy@isteer.com";
+//		 this.toEmail = "ponvasanth.rangasamy@isteer.com";
 		 this.emailBody = "<html>\n" +
 	                "  <body style=\"font-family: Arial, sans-serif; line-height: 1.6; color: #333;\">\n" +
-	                "    <p>Dear " + data.getLoggedInUser() + ",</p>\n" +
+	                "    <p>Dear " + data.getLoggedInUserName() + ",</p>\n" +
 	                "    <p>We've detected that your system contains the following vulnerable applications:</p>\n" +
 	                "\n" +
 	                "    <p><strong>Machine Name:</strong> " + data.getMachineName() + "<br/>\n" +
 	                "       <strong>IP Address:</strong> " + data.getIpAddress() + "<br/>\n" +
-	                "       <strong>Logged In User:</strong> " + data.getLoggedInUser() + "\n" +
+	                "       <strong>Logged In User:</strong> " + data.getLoggedInUserName() + "\n" +
 	                "    </p>\n" +
 	                "\n" +
 	                "    <div style=\"max-width: 100%; max-height: 300px; overflow-x: auto; overflow-y: auto; padding: 5px; font-family: Arial, sans-serif;\">\n" +

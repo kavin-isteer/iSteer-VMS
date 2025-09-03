@@ -20,7 +20,8 @@ public class ComputerResponseDto {
 	private String osVersion;
 	private String antivirusStatus;
 	private String firewallStatus;
-	private String loggedInUser;
+	private String loggedInUserName;
+	private String loggedInUserEmail;
 	@Builder.Default
 	private int installedSoftwareCount = 0;
 	@Builder.Default
