@@ -24,6 +24,7 @@ public class ComputerResponseDto {
 	private String loggedInUserName;
 	private String loggedInUserEmail;
 	private LocalDateTime updatedAt;
+	private LocalDateTime createdAt;
 	@Builder.Default
 	private int installedSoftwareCount = 0;
 	@Builder.Default
