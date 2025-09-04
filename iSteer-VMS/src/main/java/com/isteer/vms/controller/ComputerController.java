@@ -102,9 +102,9 @@ public class ComputerController {
 	public ResponseEntity<Object> getMetrics() {
 		log.info("Received request to fetch dashboard metrics.");
 		DashboardMetricsDto metrics = computerService.getDashboardMetrics();
-		if (metrics == null) {
+		if (metrics.getComputerDetails().size() == 0) {
 			log.info("No metrics found.");
-			return ResponseUtil.message(ResponseCode.NO_DATA_FOUND);
+			return ResponseUtil.message(ResponseCode.NO_DATA_FOUND,HttpStatus.NO_CONTENT);
 		} else {
 			log.info("Returning dashboard metrics");
 			return ResponseUtil.data(metrics);

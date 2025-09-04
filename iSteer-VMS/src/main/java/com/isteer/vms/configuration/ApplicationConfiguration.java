@@ -2,6 +2,7 @@ package com.isteer.vms.configuration;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
@@ -12,6 +13,9 @@ import org.springframework.web.filter.CorsFilter;
 
 @Configuration
 public class ApplicationConfiguration {
+	@Value("${development.ui.url}")
+	private String devUiUrl;
+	
 	@Bean
     RestTemplate restTemplate() {
         return new RestTemplate();
@@ -20,7 +24,7 @@ public class ApplicationConfiguration {
 	@Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://127.0.0.1:5500", "http://localhost:4200"));
+        configuration.setAllowedOrigins(List.of("http://127.0.0.1:5500", "http://localhost:4200",devUiUrl));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT","PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Cache-Control", "Content-Type"));
         configuration.setAllowCredentials(true);
