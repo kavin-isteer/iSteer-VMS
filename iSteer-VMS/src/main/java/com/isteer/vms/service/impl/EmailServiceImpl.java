@@ -91,46 +91,67 @@ class VulnerabilityEmailPreparator implements MimeMessagePreparator{
 		 this.toEmail = data.getLoggedInUserEmail();
 //		 this.toEmail = "kavin.kr@isteer.com";
 //		 this.toEmail = "ponvasanth.rangasamy@isteer.com";
-		 this.emailBody = "<html>\n" +
-	                "  <body style=\"font-family: Arial, sans-serif; line-height: 1.6; color: #333;\">\n" +
-	                "    <p>Dear " + data.getLoggedInUserName() + ",</p>\n" +
-	                "    <p>We've detected that your system contains the following vulnerable applications:</p>\n" +
-	                "\n" +
-	                "    <p><strong>Machine Name:</strong> " + data.getMachineName() + "<br/>\n" +
-	                "       <strong>IP Address:</strong> " + data.getIpAddress() + "<br/>\n" +
-	                "       <strong>Logged In User:</strong> " + data.getLoggedInUserName() + "\n" +
-	                "    </p>\n" +
-	                "\n" +
-	                "    <div style=\"max-width: 100%; max-height: 300px; overflow-x: auto; overflow-y: auto; padding: 5px; font-family: Arial, sans-serif;\">\n" +
-	                "      <table cellpadding=\"0\" cellspacing=\"0\" style=\"width: 100%; min-width: 900px; font-size: 14px; text-align: center;\">\n" +
-	                "        <thead>\n" +
-	                "          <tr style=\"background-color: #004080; color: white;\">\n" +
-	                "            <th style=\"padding: 10px; border: 1px solid #ccc;\">Application Name</th>\n" +
-	                "            <th style=\"padding: 10px; border: 1px solid #ccc;\">Vendor</th>\n" +
-	                "            <th style=\"padding: 10px; border: 1px solid #ccc;\">Version</th>\n" +
-	                "            <th style=\"padding: 10px; border: 1px solid #ccc;\">Critical</th>\n" +
-	                "            <th style=\"padding: 10px; border: 1px solid #ccc;\">High</th>\n" +
-	                "            <th style=\"padding: 10px; border: 1px solid #ccc;\">Medium</th>\n" +
-	                "            <th style=\"padding: 10px; border: 1px solid #ccc;\">Low</th>\n" +
-	                "          </tr>\n" +
-	                "        </thead>\n" +
-	                "        <tbody>\n" +
-	                appRows +
-	                "        </tbody>\n" +
-	                "      </table>\n" +
-	                "    </div>\n" +
-	                "\n" +
-	                "    <p style=\"margin-top: 15px; color: #555;\">\n" +
-	                "      <strong>Note:</strong> <em>The numbers under Critical, High, Medium, and Low columns represent the count of vulnerabilities detected for each severity level.\n" +
-	                "    </em></p>\n" +
-	                "\n" +
-	                "    <p style=\"margin-top: 15px;\">\n" +
-	                "      <strong>Action Required:</strong> Please update or remove these applications as soon as possible to maintain system security.\n" +
-	                "    </p>\n" +
-	                "\n" +
-	                "    <p>Regards,<br />Security Team</p>\n" +
-	                "  </body>\n" +
-	                "</html>";
+		 this.emailBody = "<html>\r\n"
+		 		+ "  <body style=\"font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; line-height: 1.5; color: #333; margin: 0; padding: 20px 0; background-color: #ededed; height: 100%;\">\r\n"
+		 		+ "    <div style=\"border: 1px solid #d3eaf5; border-radius: 8px; max-width: 800px; margin: 50px auto; box-shadow: 0 0.5px 8px #bbb; background-color: #fff\">\r\n"
+		 		+ "      <div style=\"border-top: 8px solid #118ac3; border-radius: 8px; padding: 24px;\">\r\n"
+		 		+ "        <!-- Header: Logo left, text centered -->\r\n"
+		 		+ "        <table role=\"presentation\" style=\"width: 100%; border-collapse: collapse; margin-bottom: 18px;\">\r\n"
+		 		+ "          <tr>\r\n"
+		 		+ "            <td style=\"width: 48px; vertical-align: middle;\">\r\n"
+		 		+ "              <img src=\"https://isteer.com/wp-content/uploads/2024/10/isteer_logo-1.png\" alt=\"iSteer Logo\" style=\"height:60px; width: auto;\">\r\n"
+		 		+ "            </td>\r\n"
+		 		+ "            <td style=\"text-align: center; vertical-align: middle;\">\r\n"
+		 		+ "              <h2 style=\"color: #118ac3; margin: 0; font-weight: 600; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\">\r\n"
+		 		+ "                Vulnerability Monitoring System\r\n"
+		 		+ "              </h2>\r\n"
+		 		+ "            </td>\r\n"
+		 		+ "          </tr>\r\n"
+		 		+ "        </table>\r\n"
+		 		+ "\r\n"
+		 		+ "        <!-- Greeting -->\r\n"
+		 		+ "        <p>Dear <strong>"+ data.getLoggedInUserName() +"</strong>,</p>\r\n"
+		 		+ "        <!-- Context and Importance -->\r\n"
+		 		+ "        <p>\r\n"
+		 		+ "          To ensure a secure and compliant environment, we have detected vulnerable applications on your system that require your attention. Please review the details below and take the necessary action.\r\n"
+		 		+ "        </p>\r\n"
+		 		+ "        <!-- Machine Details -->\r\n"
+		 		+ "        <ul style=\"padding-left: 12px; margin-bottom: 16px; list-style-type: none;\">\r\n"
+		 		+ "          <li><strong>Machine Name:</strong> "+data.getMachineName()+"</li>\r\n"
+		 		+ "          <li><strong>IP Address:</strong> "+ data.getIpAddress() +"</li>\r\n"
+		 		+ "          <li><strong>Logged In User:</strong> "+ data.getLoggedInUserName() +"</li>\r\n"
+		 		+ "        </ul>\r\n"
+		 		+ "        <!-- Vulnerabilities Table with Grey Shadow-->\r\n"
+		 		+ "        <div style=\"overflow-x: auto; border-radius: 8px; box-shadow: 0 0.5px 3.5px #bbb;\">\r\n"
+		 		+ "          <table style=\"width: 100%; border-collapse: collapse; font-size: 14px; border-radius: 8px; background: #fff;\">\r\n"
+		 		+ "            <thead>\r\n"
+		 		+ "              <tr style=\"background-color: #118ac3; color: #fff;\">\r\n"
+		 		+ "                <th style=\"padding: 10px 14px; border: 1px solid #ccc;\">Application Name</th>\r\n"
+		 		+ "                <th style=\"padding: 10px 14px; border: 1px solid #ccc;\">Vendor</th>\r\n"
+		 		+ "                <th style=\"padding: 10px 14px; border: 1px solid #ccc;\">Version</th>\r\n"
+		 		+ "                <th style=\"padding: 10px 14px; border: 1px solid #ccc;\">Critical</th>\r\n"
+		 		+ "                <th style=\"padding: 10px 14px; border: 1px solid #ccc;\">High</th>\r\n"
+		 		+ "                <th style=\"padding: 10px 14px; border: 1px solid #ccc;\">Medium</th>\r\n"
+		 		+ "                <th style=\"padding: 10px 24px; border: 1px solid #ccc;\">Low</th>\r\n"
+		 		+ "              </tr>\r\n"
+		 		+ "            </thead>\r\n"
+		 		+ "            <tbody>\r\n"
+		 		+appRows
+		 		+ "            </tbody>\r\n"
+		 		+ "          </table>\r\n"
+		 		+ "        </div>\r\n"
+		 		+ "\r\n"
+		 		+ "        <!-- Notes and Action -->\r\n"
+		 		+ "        <p style=\"color: #444; margin-top: 16px;\">\r\n"
+		 		+ "          <strong>Note:</strong>\r\n"
+		 		+ "          <em>The numbers under Critical, High, Medium, and Low indicate the count of vulnerabilities detected at each severity level.</em>\r\n"
+		 		+ "        </p>\r\n"
+		 		+ "        <!-- Closing -->\r\n"
+		 		+ "        <p style=\"margin-bottom: 0;\">Thanks and Regards,<br>It-Ops</p>\r\n"
+		 		+ "      </div>\r\n"
+		 		+ "    </div>\r\n"
+		 		+ "  </body>\r\n"
+		 		+ "</html>";
 	}
 	
 	@Override
@@ -147,19 +168,19 @@ class VulnerabilityEmailPreparator implements MimeMessagePreparator{
 	        for (ApplicationResponseDto app : apps) {
 	            String bgColor = alternate ? "#f0f0f0" : "#ffffff";
 	            sb.append("<tr style=\"background-color: ").append(bgColor).append(";\">")
-	              .append("<td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>")
+	              .append("<td style=\"padding: 8px; border: 1px solid #ddd; text-align: center; vertical-align: middle;\"><strong>")
 	              .append(app.getSoftwareName()).append("</strong></td>")
-	              .append("<td style=\"padding: 8px; border: 1px solid #ddd;\">")
+	              .append("<td style=\"padding: 8px; border: 1px solid #ddd; text-align: center; vertical-align: middle;\">")
 	              .append(app.getVendor()).append("</td>")
-	              .append("<td style=\"padding: 8px; border: 1px solid #ddd;\">")
+	              .append("<td style=\"padding: 8px; border: 1px solid #ddd; text-align: center; vertical-align: middle;\">")
 	              .append(app.getSoftwareVersion()).append("</td>")
-	              .append("<td style=\"padding: 8px; border: 1px solid #ddd;\">")
+	              .append("<td style=\"padding: 8px; border: 1px solid #ddd; text-align: center; vertical-align: middle;\">")
 	              .append(app.getCriticalVulnerabilityCount()).append("</td>")
-	              .append("<td style=\"padding: 8px; border: 1px solid #ddd;\">")
+	              .append("<td style=\"padding: 8px; border: 1px solid #ddd; text-align: center; vertical-align: middle;\">")
 	              .append(app.getHighVulnerabilityCount()).append("</td>")
-	              .append("<td style=\"padding: 8px; border: 1px solid #ddd;\">")
+	              .append("<td style=\"padding: 8px; border: 1px solid #ddd; text-align: center; vertical-align: middle;\">")
 	              .append(app.getMediumVulnerabilityCount()).append("</td>")
-	              .append("<td style=\"padding: 8px; border: 1px solid #ddd;\">")
+	              .append("<td style=\"padding: 8px; border: 1px solid #ddd; text-align: center; vertical-align: middle;\">")
 	              .append(app.getLowVulnerabilityCount()).append("</td>")
 	              .append("</tr>");
 	            alternate = !alternate;
