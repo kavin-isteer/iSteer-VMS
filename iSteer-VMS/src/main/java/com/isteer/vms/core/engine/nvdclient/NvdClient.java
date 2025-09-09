@@ -354,7 +354,7 @@ public class NvdClient {
 	 */
 	private List<VulnerabilityCvssMetrics> processCvssMetrics(Map<String, Object> metricMap) {
 		log.debug("Processing CVSS metrics from the CVE API response...");
-		String[] metricTypes = { "cvssMetricV31", "cvssMetricV4", "cvssMetricV2", "cvssMetricV30"};
+		String[] metricTypes = { "cvssMetricV31", "cvssMetricV4", "cvssMetricV2", "cvssMetricV30" };
 		List<VulnerabilityCvssMetrics> parsedCvssMetrics = new ArrayList<>();
 		try {
 			for (String metricType : metricTypes) {
@@ -510,8 +510,14 @@ public class NvdClient {
 				for (Object reference : references) {
 					VulnerabilityReference mitigationReference = new VulnerabilityReference();
 					mitigationReference.setReferenceUrl(JsonPath.read(reference, "$.url"));
-					List<String> tags = JsonPath.read(reference, "$.tags[*]");
-					mitigationReference.setReferenceTags(tags);
+					List<String> tags = new ArrayList<>();
+					try {
+						tags = JsonPath.read(reference, "$.tags[*]");
+					} catch (PathNotFoundException e) {
+						// tags field is missing, that's OK
+					}
+
+					mitigationReference.setReferenceTags(tags); // Can be empty
 					mitigationReferences.add(mitigationReference);
 				}
 			}

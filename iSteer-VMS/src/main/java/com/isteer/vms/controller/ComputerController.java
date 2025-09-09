@@ -88,6 +88,10 @@ public class ComputerController {
 			return ResponseUtil.message(ResponseCode.APPLICATION_ERROR);
 		case -4:
 			return ResponseUtil.message(ResponseCode.INTERNAL_ERROR);
+		case -5:
+			return ResponseUtil.message(ResponseCode.COMPUTER_NOT_UPDATED, HttpStatus.INTERNAL_SERVER_ERROR);
+		case -6:
+			return ResponseUtil.message(ResponseCode.COMPUTER_NOT_CREATED, HttpStatus.INTERNAL_SERVER_ERROR);
 		default:
 			return ResponseUtil.message(ResponseCode.DEFAULT_ERROR);
 		}

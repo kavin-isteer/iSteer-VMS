@@ -26,6 +26,16 @@ public class ComputerPayloadDto {
 	@NotBlank(message = "Machine name cannot be blank")
 	private String machineName;
 	
+	@NotBlank(message = "Serial number cannot be blank")
+	private String serialNumber;
+	
+	@Pattern(
+			regexp = "^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$",
+			message = "Invalid MAC address format"
+			)
+	@NotBlank(message = "MAC address cannot be blank")
+	private String macAddress;
+	
 	@Pattern(
 		    regexp = "^((25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)\\.){3}(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)$",
 		    message = "Invalid IP address format"
@@ -60,6 +70,18 @@ public class ComputerPayloadDto {
 	}
 	public void setDeviceId(String deviceId) {
 		this.deviceId = deviceId;
+	}
+	public String getSerialNumber() {
+		return serialNumber;
+	}
+	public void setSerialNumber(String serialNumber) {
+		this.serialNumber = serialNumber;
+	}
+	public String getMacAddress() {
+		return macAddress;
+	}
+	public void setMacAddress(String macAddress) {
+		this.macAddress = macAddress;
 	}
 	public String getMachineName() {
 		return machineName;
