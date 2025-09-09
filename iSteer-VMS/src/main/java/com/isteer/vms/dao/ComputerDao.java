@@ -15,7 +15,9 @@ public interface ComputerDao {
 	
 	Optional<Computer> getComputerByDeviceId(String deviceId);
 
-	int createOrUpdateComputer(Computer computer);
+	int createComputer(Computer computer);
+	
+	int updateComputer(Computer computer);
 
 	int getTotalComputersCount();
 

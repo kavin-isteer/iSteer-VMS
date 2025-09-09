@@ -14,6 +14,8 @@ public enum ResponseCode {
 	
 	COMPUTER_DELETED(9001, "Cannot update computer as it is deleted. Please restore it first."),
 	COMPUTER_INACTIVE(9002, "Cannot update computer as it is inactive. Please activate it first."),
+	COMPUTER_NOT_UPDATED(9015, "Computer could not be updated. Please try again later."),
+	COMPUTER_NOT_CREATED(9016, "Computer could not be created. Please try again later."),
 	APPLICATION_ERROR(9003, "Error while processing application data. Please check the input data"),
 	DEFAULT_ERROR(9004, "Cannot process request. Please try again later."),
 	METHOD_ARGUMENT_NOT_VALID(9005, "Invalid input data. Please check the data and try again."),

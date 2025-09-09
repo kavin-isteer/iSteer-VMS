@@ -63,7 +63,11 @@ public class ComputerServiceImpl implements ComputerService {
 			if (!checkIfUpdateRequired(computer, existing)) {
 				existing = updateExistingComputer(existing, computer);
 				log.info("Updating existing computer with deviceId: {}", computer.getDeviceId());
-				int status = computerDao.createOrUpdateComputer(existing);
+				int status = computerDao.updateComputer(existing);
+				if(status == 0) {
+					log.error("Failed to update computer with deviceId: {}", computer.getDeviceId());
+					return -5;
+				}
 				return finalizeStatus(status, applicationService.createOrUpdateApplication(existing.getUuid(),
 						computer.getInstalledSoftwares()), false);
 
@@ -78,7 +82,11 @@ public class ComputerServiceImpl implements ComputerService {
 		log.info("No existing computer found with deviceId: {}, creating a new one.", computer.getDeviceId());
 		Computer newComputer = buildNewComputer(computer);
 		log.info("Creating new computer with deviceId: {}", computer.getDeviceId());
-		int computerStatus = computerDao.createOrUpdateComputer(newComputer);
+		int computerStatus = computerDao.createComputer(newComputer);
+		if(computerStatus == 0) {
+			log.error("Failed to create new computer with deviceId: {}", computer.getDeviceId());
+			return -6;
+		}
 		int applicationStatus = applicationService.createOrUpdateApplication(newComputer.getUuid(),
 				computer.getInstalledSoftwares());
 
@@ -97,7 +105,8 @@ public class ComputerServiceImpl implements ComputerService {
 
 	private Computer buildNewComputer(ComputerPayloadDto dto) {
 		return Computer.builder().uuid(UUID.randomUUID().toString()).deviceId(dto.getDeviceId())
-				.machineName(dto.getMachineName()).ipAddress(dto.getIpAddress()).osVersion(dto.getOsVersion())
+				.machineName(dto.getMachineName()).serialNumber(dto.getSerialNumber()).macAddress(dto.getMacAddress())
+				.ipAddress(dto.getIpAddress()).osVersion(dto.getOsVersion())
 				.antiVirusStatus(dto.getAntivirusStatus()).firewallStatus(dto.getFirewallStatus())
 				.loggedinUserName(dto.getLoggedInUser().getUserName()).loggedInUserEmail(dto.getLoggedInUser().getUserEmail()).lastUpdateCheck(dto.getLastUpdateCheck())
 				.timestamp(dto.getTimestamp()).build();
@@ -126,6 +135,8 @@ public class ComputerServiceImpl implements ComputerService {
 	private boolean checkIfUpdateRequired(ComputerPayloadDto payload, Computer existing) {
 		log.debug("Checking if update is required for computer with deviceId: {}", existing.getDeviceId());
 		return isEqual(existing.getMachineName(), payload.getMachineName())
+				&& isEqual(existing.getSerialNumber(), payload.getSerialNumber())
+				&& isEqual(existing.getMacAddress(), payload.getMacAddress())
 				&& isEqual(existing.getIpAddress(), payload.getIpAddress())
 				&& isEqual(existing.getOsVersion(), payload.getOsVersion())
 				&& isEqual(existing.getAntiVirusStatus(), payload.getAntivirusStatus())
@@ -170,7 +181,8 @@ public class ComputerServiceImpl implements ComputerService {
 					Collections.emptyMap());
 
 			return ComputerResponseDto.builder().uuid(computer.getUuid()).deviceId(computer.getDeviceId())
-					.machineName(computer.getMachineName()).ipAddress(computer.getIpAddress())
+					.machineName(computer.getMachineName()).serialNumber(computer.getSerialNumber())
+					.macAddress(computer.getMacAddress()).ipAddress(computer.getIpAddress())
 					.osVersion(computer.getOsVersion()).antivirusStatus(computer.getAntiVirusStatus())
 					.firewallStatus(computer.getFirewallStatus()).loggedInUserName(computer.getLoggedinUserName())
 					.loggedInUserEmail(computer.getLoggedInUserEmail())
