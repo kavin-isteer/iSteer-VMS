@@ -17,6 +17,8 @@ public class Computer {
 	private String uuid;
 	private String deviceId;
 	private String machineName;
+	private String serialNumber;
+	private String macAddress;
 	private String ipAddress;
 	private String osVersion;
 	private String antiVirusStatus;

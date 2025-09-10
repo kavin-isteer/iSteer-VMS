@@ -17,6 +17,8 @@ public class ComputerRowMapper implements RowMapper<Computer>{
 	            .uuid(rs.getString("uuid"))
 	            .deviceId(rs.getString("device_id"))
 	            .machineName(rs.getString("hostname"))
+	            .serialNumber(rs.getString("serial_number"))
+	            .macAddress(rs.getString("mac_address"))
 	            .ipAddress(rs.getString("ip_address"))
 	            .osVersion(rs.getString("os_version"))
 	            .antiVirusStatus(rs.getString("antivirus_status"))
