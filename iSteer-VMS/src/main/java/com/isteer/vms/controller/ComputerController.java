@@ -108,7 +108,7 @@ public class ComputerController {
 		DashboardMetricsDto metrics = computerService.getDashboardMetrics();
 		if (metrics.getComputerDetails().size() == 0) {
 			log.info("No metrics found.");
-			return ResponseUtil.message(ResponseCode.NO_DATA_FOUND,HttpStatus.NO_CONTENT);
+			return ResponseUtil.message(ResponseCode.NO_DATA_FOUND, HttpStatus.NO_CONTENT);
 		} else {
 			log.info("Returning dashboard metrics");
 			return ResponseUtil.data(metrics);
@@ -218,11 +218,23 @@ public class ComputerController {
 		if (computerUuid != null && !computerUuid.isEmpty()) {
 			log.debug("Sending notification for computer with UUID: {}", computerUuid);
 			emailService.sendVulnEmailNotification(computerService.getComputerWithVulnerabilitiesByUuid(computerUuid));
-			
+
 			return ResponseUtil.message(ResponseCode.NOTIFICATION_SENT_SUCCESSFULLY);
 		}
 		emailService.sendVulnEmailNotifications(computerService.getAllComputersWithVulnerabilities());
 		return ResponseUtil.message(ResponseCode.NOTIFICATION_SENT_SUCCESSFULLY);
+	}
+
+	@GetMapping("/getComputer/{computerUuid}")
+	public ResponseEntity<Object> getComputerByUuid(@PathVariable String computerUuid) {
+		log.info("Received request to fetch computer details for UUID: {}", computerUuid);
+
+		ComputerResponseDto computerDetails = computerService.getComputerByUuid(computerUuid);
+
+		log.info("Successfully retrieved computer details for UUID: {} with {} applications", computerUuid,
+				computerDetails.getApplicationDetails().size());
+		return ResponseEntity.ok(computerDetails);
+
 	}
 
 }

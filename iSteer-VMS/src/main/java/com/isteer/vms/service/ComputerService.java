@@ -44,4 +44,6 @@ public interface ComputerService {
 
 	ComputerResponseDto getComputerWithVulnerabilitiesByUuid(String computerUuid);
 
+	ComputerResponseDto getComputerByUuid(String computerUuid);
+
 }

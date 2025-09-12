@@ -30,4 +30,6 @@ public interface ComputerDao {
 	List<ComputerResponseDto> getAllComputersWithVulnerabilities();
 
 	ComputerResponseDto getComputerWithVulnerabilitiesByUuid(String computerUuid);
+
+	Optional<Computer> findByUuid(String uuid);
 }

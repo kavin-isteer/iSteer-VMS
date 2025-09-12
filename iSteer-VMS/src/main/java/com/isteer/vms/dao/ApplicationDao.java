@@ -26,4 +26,8 @@ public interface ApplicationDao {
 
 	void updateProcessIdsBatch(List<ComputerApplication> compAppsToUpdate);
 
+	List<Map<String, Object>> findApplicationsByComputerUuid(String computerUuid);
+
+	List<Integer> parseProcessIds(String processIdsJson);
+
 }

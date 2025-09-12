@@ -10,6 +10,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.isteer.vms.dao.ApplicationDao;
 import com.isteer.vms.dao.rowmapper.ApplicationRowMapper;
@@ -25,10 +26,12 @@ public class ApplicationDaoImpl implements ApplicationDao {
 
 	private JdbcTemplate jdbcTemplate;
 	private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+	private ObjectMapper objectMapper;
 
-	public ApplicationDaoImpl(JdbcTemplate jdbcTemplate, NamedParameterJdbcTemplate namedParameterJdbcTemplate) {
+	public ApplicationDaoImpl(JdbcTemplate jdbcTemplate, NamedParameterJdbcTemplate namedParameterJdbcTemplate, ObjectMapper objectMapper) {
 		this.jdbcTemplate = jdbcTemplate;
 		this.namedParameterJdbcTemplate = namedParameterJdbcTemplate;
+		this.objectMapper = objectMapper;
 	}
 
 	@Override
@@ -250,6 +253,44 @@ public class ApplicationDaoImpl implements ApplicationDao {
 			log.error("Error converting process IDs to JSON", e);
 			return "[]";
 		}
+	}
+	
+	@Override
+	public List<Map<String, Object>> findApplicationsByComputerUuid(String computerUuid) {
+        String sql = """
+            SELECT 
+                ca.uuid as computer_application_uuid,
+                ca.installed_date,
+                ca.process_ids,
+                a.uuid as application_uuid,
+                a.name as software_name,
+                a.version as software_version,
+                a.vendor_name as vendor,
+                acnd.cpe_name,
+                acnd.is_resolved_cpe
+            FROM computer_applications ca
+            INNER JOIN applications a ON ca.application_uuid = a.uuid
+            LEFT JOIN application_cpe_name_details acnd ON a.uuid = acnd.application_uuid
+            WHERE ca.computer_uuid = ? AND ca.is_deleted = 0
+            ORDER BY a.name
+            """;
+        
+        return jdbcTemplate.queryForList(sql, computerUuid);
+    }
+
+	@Override
+	public List<Integer> parseProcessIds(String processIdsJson) {
+		if (processIdsJson == null || processIdsJson.trim().isEmpty()) {
+            return List.of();
+        }
+        
+        try {
+            return objectMapper.readValue(processIdsJson, new TypeReference<List<Integer>>() {});
+        } catch (Exception e) {
+            log.error("Error parsing process IDs JSON: {}", processIdsJson, e);
+            return List.of();
+        }
+
 	}
 
 
