@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,10 +15,14 @@ import org.springframework.transaction.annotation.Transactional;
 import com.isteer.vms.dao.ApplicationDao;
 import com.isteer.vms.dao.ComputerDao;
 import com.isteer.vms.dao.VulnerabilityDao;
+import com.isteer.vms.dao.impl.ApplicationDaoImpl;
+import com.isteer.vms.dto.ApplicationResponseDto;
 import com.isteer.vms.dto.ComputerPayloadDto;
 import com.isteer.vms.dto.ComputerResponseDto;
 import com.isteer.vms.dto.DashboardMetricsDto;
+import com.isteer.vms.exception.BusinessException;
 import com.isteer.vms.model.Computer;
+import com.isteer.vms.model.Vulnerability;
 import com.isteer.vms.service.ApplicationService;
 import com.isteer.vms.service.ComputerService;
 
@@ -64,7 +69,7 @@ public class ComputerServiceImpl implements ComputerService {
 				existing = updateExistingComputer(existing, computer);
 				log.info("Updating existing computer with deviceId: {}", computer.getDeviceId());
 				int status = computerDao.updateComputer(existing);
-				if(status == 0) {
+				if (status == 0) {
 					log.error("Failed to update computer with deviceId: {}", computer.getDeviceId());
 					return -5;
 				}
@@ -83,7 +88,7 @@ public class ComputerServiceImpl implements ComputerService {
 		Computer newComputer = buildNewComputer(computer);
 		log.info("Creating new computer with deviceId: {}", computer.getDeviceId());
 		int computerStatus = computerDao.createComputer(newComputer);
-		if(computerStatus == 0) {
+		if (computerStatus == 0) {
 			log.error("Failed to create new computer with deviceId: {}", computer.getDeviceId());
 			return -6;
 		}
@@ -97,8 +102,8 @@ public class ComputerServiceImpl implements ComputerService {
 		Computer updated = existing.toBuilder().machineName(dto.getMachineName()).ipAddress(dto.getIpAddress())
 				.osVersion(dto.getOsVersion()).antiVirusStatus(dto.getAntivirusStatus())
 				.firewallStatus(dto.getFirewallStatus()).loggedinUserName(dto.getLoggedInUser().getUserName())
-				.loggedInUserEmail(dto.getLoggedInUser().getUserEmail())
-				.lastUpdateCheck(dto.getLastUpdateCheck()).timestamp(dto.getTimestamp()).build();
+				.loggedInUserEmail(dto.getLoggedInUser().getUserEmail()).lastUpdateCheck(dto.getLastUpdateCheck())
+				.timestamp(dto.getTimestamp()).build();
 		existing.updatedAtNow();
 		return updated;
 	}
@@ -106,9 +111,9 @@ public class ComputerServiceImpl implements ComputerService {
 	private Computer buildNewComputer(ComputerPayloadDto dto) {
 		return Computer.builder().uuid(UUID.randomUUID().toString()).deviceId(dto.getDeviceId())
 				.machineName(dto.getMachineName()).serialNumber(dto.getSerialNumber()).macAddress(dto.getMacAddress())
-				.ipAddress(dto.getIpAddress()).osVersion(dto.getOsVersion())
-				.antiVirusStatus(dto.getAntivirusStatus()).firewallStatus(dto.getFirewallStatus())
-				.loggedinUserName(dto.getLoggedInUser().getUserName()).loggedInUserEmail(dto.getLoggedInUser().getUserEmail()).lastUpdateCheck(dto.getLastUpdateCheck())
+				.ipAddress(dto.getIpAddress()).osVersion(dto.getOsVersion()).antiVirusStatus(dto.getAntivirusStatus())
+				.firewallStatus(dto.getFirewallStatus()).loggedinUserName(dto.getLoggedInUser().getUserName())
+				.loggedInUserEmail(dto.getLoggedInUser().getUserEmail()).lastUpdateCheck(dto.getLastUpdateCheck())
 				.timestamp(dto.getTimestamp()).build();
 	}
 
@@ -185,8 +190,7 @@ public class ComputerServiceImpl implements ComputerService {
 					.macAddress(computer.getMacAddress()).ipAddress(computer.getIpAddress())
 					.osVersion(computer.getOsVersion()).antivirusStatus(computer.getAntiVirusStatus())
 					.firewallStatus(computer.getFirewallStatus()).loggedInUserName(computer.getLoggedinUserName())
-					.loggedInUserEmail(computer.getLoggedInUserEmail())
-					.updatedAt(computer.getUpdatedAt())
+					.loggedInUserEmail(computer.getLoggedInUserEmail()).updatedAt(computer.getUpdatedAt())
 					.createdAt(computer.getCreatedAt())
 					.installedSoftwareCount(installedAppCounts.getOrDefault(computer.getUuid(), 0))
 					.vulnerableSoftwareCount(vulnerableAppCounts.getOrDefault(computer.getUuid(), 0))
@@ -197,6 +201,7 @@ public class ComputerServiceImpl implements ComputerService {
 					.applicationDetails(applicationService.getApplicationDetails(computer.getUuid())).build();
 		}).toList();
 	}
+
 	@Override
 	public List<ComputerResponseDto> getAllComputersWithVulnerabilities() {
 		log.info("Fetching all computers with vulnerabilities.");
@@ -207,5 +212,126 @@ public class ComputerServiceImpl implements ComputerService {
 	public ComputerResponseDto getComputerWithVulnerabilitiesByUuid(String computerUuid) {
 		log.info("Fetching computer with vulnerabilities by UUID: {}", computerUuid);
 		return computerDao.getComputerWithVulnerabilitiesByUuid(computerUuid);
+	}
+
+	@Override
+	public ComputerResponseDto getComputerByUuid(String uuid) {
+		log.info("Fetching computer details for UUID: {}", uuid);
+
+		// Get computer basic info
+		Computer computer = computerDao.findByUuid(uuid)
+				.orElseThrow(() -> new BusinessException("Computer not found with UUID: " + uuid, 404));
+
+		// Get applications for this computer (simplified - no grouping needed)
+		List<ApplicationResponseDto> applications = getApplicationsForComputer(uuid);
+
+		// Calculate vulnerability counts at computer level
+		VulnerabilityCountsSummary summary = calculateComputerVulnerabilitySummary(applications);
+
+		return ComputerResponseDto.builder().uuid(computer.getUuid()).deviceId(computer.getDeviceId())
+				.machineName(computer.getMachineName()).serialNumber(computer.getSerialNumber())
+				.macAddress(computer.getMacAddress()).ipAddress(computer.getIpAddress())
+				.osVersion(computer.getOsVersion()).antivirusStatus(computer.getAntiVirusStatus())
+				.firewallStatus(computer.getFirewallStatus()).loggedInUserName(computer.getLoggedinUserName())
+				.loggedInUserEmail(computer.getLoggedInUserEmail()).createdAt(computer.getCreatedAt())
+				.updatedAt(computer.getUpdatedAt()).installedSoftwareCount(applications.size())
+				.vulnerableSoftwareCount(summary.vulnerableSoftwareCount)
+				.criticalVulnerableApplicationCount(summary.criticalAppsCount)
+				.highVulnerableApplicationCount(summary.highAppsCount)
+				.mediumVulnerableApplicationCount(summary.mediumAppsCount)
+				.lowVulnerableApplicationCount(summary.lowAppsCount).applicationDetails(applications).build();
+	}
+
+	// Simplified method - no complex grouping needed
+	private List<ApplicationResponseDto> getApplicationsForComputer(String computerUuid) {
+		List<Map<String, Object>> applicationData = applicationDao.findApplicationsByComputerUuid(computerUuid);
+
+		return applicationData.stream()
+				.map(this::buildApplicationResponseDto)
+				.collect(Collectors.toList());
+	}
+
+	// Simplified DTO builder
+	private ApplicationResponseDto buildApplicationResponseDto(Map<String, Object> appData) {
+		String applicationUuid = (String) appData.get("application_uuid");
+		String processIdsJson = (String) appData.get("process_ids");
+
+		// Parse process IDs
+		List<Integer> processIds = applicationDao.parseProcessIds(processIdsJson);
+
+		// Get vulnerabilities for this application
+		List<Vulnerability> vulnerabilities = vulnerabilityDao.findByApplicationUuid(applicationUuid);
+
+		// Calculate vulnerability counts
+		VulnerabilityCountsApp vulnCounts = calculateApplicationVulnerabilityCounts(vulnerabilities);
+
+		// Get CPE name directly (no grouping needed)
+		String cpeName = (String) appData.get("cpe_name");
+		if (cpeName == null) {
+			cpeName = ""; // Default to empty string if no CPE name
+		}
+
+		// Check if resolved
+		Boolean isResolvedCpe = (Boolean) appData.get("is_resolved_cpe");
+		boolean isResolved = isResolvedCpe != null && isResolvedCpe;
+
+		return ApplicationResponseDto.builder().uuid(applicationUuid)
+				.softwareName((String) appData.get("software_name"))
+				.softwareVersion((String) appData.get("software_version")).vendor((String) appData.get("vendor"))
+				.runningProcessIds(processIds).cpeName(cpeName).isResolved(isResolved)
+				.criticalVulnerabilityCount(vulnCounts.critical).highVulnerabilityCount(vulnCounts.high)
+				.mediumVulnerabilityCount(vulnCounts.medium).lowVulnerabilityCount(vulnCounts.low)
+				.vulnerabilities(vulnerabilities).build();
+	}
+
+	private VulnerabilityCountsApp calculateApplicationVulnerabilityCounts(List<Vulnerability> vulnerabilities) {
+		int critical = 0, high = 0, medium = 0, low = 0;
+
+		for (Vulnerability vuln : vulnerabilities) {
+			switch (vuln.getSeverity()) {
+			case CRITICAL -> critical++;
+			case HIGH -> high++;
+			case MEDIUM -> medium++;
+			case LOW -> low++;
+			}
+		}
+
+		return new VulnerabilityCountsApp(critical, high, medium, low);
+	}
+
+	private VulnerabilityCountsSummary calculateComputerVulnerabilitySummary(
+			List<ApplicationResponseDto> applications) {
+		int vulnerableSoftwareCount = 0;
+		int criticalAppsCount = 0, highAppsCount = 0, mediumAppsCount = 0, lowAppsCount = 0;
+
+		for (ApplicationResponseDto app : applications) {
+			// Count as vulnerable if it has any vulnerabilities
+			if (app.getCriticalVulnerabilityCount() > 0 || app.getHighVulnerabilityCount() > 0
+					|| app.getMediumVulnerabilityCount() > 0 || app.getLowVulnerabilityCount() > 0) {
+				vulnerableSoftwareCount++;
+			}
+
+			// Count applications by their highest severity vulnerability
+			if (app.getCriticalVulnerabilityCount() > 0) {
+				criticalAppsCount++;
+			} else if (app.getHighVulnerabilityCount() > 0) {
+				highAppsCount++;
+			} else if (app.getMediumVulnerabilityCount() > 0) {
+				mediumAppsCount++;
+			} else if (app.getLowVulnerabilityCount() > 0) {
+				lowAppsCount++;
+			}
+		}
+
+		return new VulnerabilityCountsSummary(vulnerableSoftwareCount, criticalAppsCount, highAppsCount,
+				mediumAppsCount, lowAppsCount);
+	}
+
+	// Helper records
+	private record VulnerabilityCountsApp(int critical, int high, int medium, int low) {
+	}
+
+	private record VulnerabilityCountsSummary(int vulnerableSoftwareCount, int criticalAppsCount, int highAppsCount,
+			int mediumAppsCount, int lowAppsCount) {
 	}
 }

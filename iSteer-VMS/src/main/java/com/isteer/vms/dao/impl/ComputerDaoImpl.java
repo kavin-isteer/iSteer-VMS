@@ -396,5 +396,26 @@ public class ComputerDaoImpl implements ComputerDao {
 			return null;
 		}
 	}
+	
+	@Override
+	public Optional<Computer> findByUuid(String uuid) {
+        String sql = """
+            SELECT id, uuid, device_id, hostname, serial_number, mac_address, ip_address,
+                   os_version, antivirus_status, firewall_status, logged_in_user_name,
+                   logged_in_user_email, last_update_check, timestamp, is_deleted,
+                   is_active, created_at, updated_at
+            FROM computers 
+            WHERE uuid = ? AND is_deleted = 0 AND is_active = 1
+            """;
+        
+        try {
+            Computer computer = jdbcTemplate.queryForObject(sql, new ComputerRowMapper(), uuid);
+            return Optional.of(computer);
+        } catch (EmptyResultDataAccessException e) {
+            log.warn("Computer not found with UUID: {}", uuid);
+            return Optional.empty();
+        }
+    }
+
 
 }
