@@ -28,19 +28,9 @@ public class EmailServiceImpl implements EmailService{
 	@Value("${spring.mail.username}")
 	private String fromEmail;
 	
-	@Value("${development.ui.url}")
-	private String devUiUrl;
-	
-	@Value("${production.ui.url}")
-	private String prodUiUrl;
-	
-	@Value("${app.environment}")
-	private String environment;
+	@Value("${ui.base.url}")
+	private String baseUrl;
 
-	private String getBaseUrl() {
-	    return "prod".equalsIgnoreCase(environment) ? prodUiUrl : devUiUrl;
-	}
-	
 	public EmailServiceImpl(JavaMailSender javaMailSender) {
 		this.javaMailSender = javaMailSender;
 	}
@@ -48,7 +38,6 @@ public class EmailServiceImpl implements EmailService{
 	@Override
 	public void sendVulnEmailNotification(ComputerResponseDto data) {
 		log.info("Sending vulnerability email notification to computer: {}", data.getMachineName());
-		String baseUrl = getBaseUrl();
 		try {
 			javaMailSender.send(new VulnerabilityEmailPreparator(data, fromEmail, baseUrl));
 			log.info("Vulnerability email sent successfully to {}", data.getLoggedInUserName());
@@ -71,7 +60,6 @@ public class EmailServiceImpl implements EmailService{
 	@Override
 	public void sendVulnEmailNotifications(List<ComputerResponseDto> data) {
 		log.info("Sending vulnerability email notifications to {} computers", data.size());
-		String baseUrl = getBaseUrl();
 		for(ComputerResponseDto computer : data) {
 			try {
 				javaMailSender.send(new VulnerabilityEmailPreparator(computer,fromEmail, baseUrl));
@@ -104,8 +92,6 @@ class VulnerabilityEmailPreparator implements MimeMessagePreparator{
 		 String appRows = generateApplicationRows(data.getApplicationDetails());
 		 this.fromEmail = fromEmail;
 		 this.toEmail = data.getLoggedInUserEmail();
-//		 this.toEmail = "kavin.kr@isteer.com";
-//		 this.toEmail = "ponvasanth.rangasamy@isteer.com";
 		 this.emailBody = "<html>\r\n"
 		 		+ "  <body style=\"font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; line-height: 1.5; color: #333; margin: 0; padding: 20px 5px; background-color: #ededed; height: 100%;\">\r\n"
 		 		+ "    <div style=\"border: 1px solid #d3eaf5; border-radius: 8px; max-width: 800px; margin: 50px auto; box-shadow: 0 0.5px 8px #bbb; background-color: #fff\">\r\n"
