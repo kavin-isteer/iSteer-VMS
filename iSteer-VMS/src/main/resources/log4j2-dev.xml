@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n" />
+        </Console>
+    </Appenders>
+
+    <Loggers>
+
+        <!-- Logger for your application package, DEBUG level -->
+        <Logger name="com.isteer.vms" level="debug" additivity="false">
+            <AppenderRef ref="Console" />
+        </Logger>
+
+        <!-- Root logger logs ERROR only, no console appender (or minimal logging) -->
+        <Root level="error">
+            <!-- No appenders or you can add console with ERROR level -->
+            <AppenderRef ref="Console" />
+        </Root>
+
+    </Loggers>
+</Configuration>

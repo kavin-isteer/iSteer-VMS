@@ -36,7 +36,7 @@ public class NVDDataProcessor {
 	}
 
 	@Value("${nvd.api.key}")
-    private String NVD_API_KEY;
+    private String nvdApiKey;
 
     private static final String DOWNLOAD_URL = "https://nvd.nist.gov/feeds/json/cpe/2.0/nvdcpe-2.0.zip";
     private static final String EXTRACT_FOLDER = "cpe_data";
@@ -94,7 +94,7 @@ public class NVDDataProcessor {
         URL url = new URL(urlString);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("GET");
-        connection.setRequestProperty("apiKey", NVD_API_KEY);
+        connection.setRequestProperty("apiKey", nvdApiKey);
         connection.setConnectTimeout(5000);
         connection.setReadTimeout(5000);
 

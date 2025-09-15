@@ -44,7 +44,7 @@ public class NvdController {
 					@ApiResponse(responseCode = "500", description = "Internal server error", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BaseResponse.class)))
 			})
 	@GetMapping("/nvd/executeJob/updateCpeDictionary")
-	public ResponseEntity<?> updateCpeDictionary() {
+	public ResponseEntity<Map<String, String>> updateCpeDictionary() {
 		Map<String, String> status = new HashMap<>();
 		try {
 			String jobId = jobExecutor.startUpdateCpeDictionaryJob();
@@ -60,7 +60,7 @@ public class NvdController {
 					@ApiResponse(responseCode = "500", description = "Internal server error", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BaseResponse.class)))
 			})
 	@GetMapping("/nvd/jobStatus")
-	public ResponseEntity<?> getJobStatus(String jobId) {
+	public ResponseEntity<Map<String, String>> getJobStatus(String jobId) {
 		Map<String, String> status = new HashMap<>();
 		try {
 			String jobStatus = jobExecutor.getJobStatus(jobId);

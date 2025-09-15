@@ -20,18 +20,15 @@ public class ComputerApplicationRowMapper implements RowMapper<ComputerApplicati
 	public ComputerApplication mapRow(ResultSet rs, int rowNum) throws SQLException {
 		
 		 String processIdsJson = rs.getString("process_ids"); // Assuming this is the column name
-//		 System.out.println("process Ids Json: " + processIdsJson);
 	        List<Integer> processIds = new ArrayList<>();
 
 	        if (processIdsJson != null && !processIdsJson.isBlank()) {
 	            try {
-//	            	System.out.println("Inside try bloick");
 	                processIds = objectMapper.readValue(processIdsJson, new TypeReference<List<Integer>>() {});
 	            } catch (Exception e) {
 	                throw new SQLException("Failed to parse process_ids JSON: " + processIdsJson, e);
 	            }
 	        }
-//	        System.out.println("Process Ids: " + processIds);
 		return ComputerApplication.builder()
 				.uuid(rs.getString("uuid"))
 				.applicationUuid(rs.getString("application_uuid"))
