@@ -28,6 +28,19 @@ public class EmailServiceImpl implements EmailService{
 	@Value("${spring.mail.username}")
 	private String fromEmail;
 	
+	@Value("${development.ui.url}")
+	private String devUiUrl;
+	
+	@Value("${production.ui.url}")
+	private String prodUiUrl;
+	
+	@Value("${app.environment}")
+	private String environment;
+
+	private String getBaseUrl() {
+	    return "prod".equalsIgnoreCase(environment) ? prodUiUrl : devUiUrl;
+	}
+	
 	public EmailServiceImpl(JavaMailSender javaMailSender) {
 		this.javaMailSender = javaMailSender;
 	}
@@ -35,8 +48,9 @@ public class EmailServiceImpl implements EmailService{
 	@Override
 	public void sendVulnEmailNotification(ComputerResponseDto data) {
 		log.info("Sending vulnerability email notification to computer: {}", data.getMachineName());
+		String baseUrl = getBaseUrl();
 		try {
-			javaMailSender.send(new VulnerabilityEmailPreparator(data, fromEmail));
+			javaMailSender.send(new VulnerabilityEmailPreparator(data, fromEmail, baseUrl));
 			log.info("Vulnerability email sent successfully to {}", data.getLoggedInUserName());
 		} catch (MailSendException e) { 
 			log.error(e.getMessage());
@@ -57,9 +71,10 @@ public class EmailServiceImpl implements EmailService{
 	@Override
 	public void sendVulnEmailNotifications(List<ComputerResponseDto> data) {
 		log.info("Sending vulnerability email notifications to {} computers", data.size());
+		String baseUrl = getBaseUrl();
 		for(ComputerResponseDto computer : data) {
 			try {
-				javaMailSender.send(new VulnerabilityEmailPreparator(computer,fromEmail));
+				javaMailSender.send(new VulnerabilityEmailPreparator(computer,fromEmail, baseUrl));
 			} catch (MailSendException e) { 
 				log.error(e.getMessage());
 				throw new EmailServiceException(ResponseCode.EMAIL_NOT_SENT.getMessage(), 500);
@@ -85,7 +100,7 @@ class VulnerabilityEmailPreparator implements MimeMessagePreparator{
 	private String subject = "Urgent Action Required: Vulnerabilities Detected on your Computer";
 	private String emailBody;
 	
-	public VulnerabilityEmailPreparator(ComputerResponseDto data, String fromEmail) {
+	public VulnerabilityEmailPreparator(ComputerResponseDto data, String fromEmail, String devUiUrl) {
 		 String appRows = generateApplicationRows(data.getApplicationDetails());
 		 this.fromEmail = fromEmail;
 		 this.toEmail = data.getLoggedInUserEmail();
@@ -154,12 +169,14 @@ class VulnerabilityEmailPreparator implements MimeMessagePreparator{
 		 		+ "          <strong>Note:</strong>\r\n"
 		 		+ "          <em>The numbers under Critical, High, Medium, and Low indicate the count of vulnerabilities detected at each severity level.</em>\r\n"
 		 		+ "        </p>\r\n"
+		 		+ "		   <p> <a href=\"" + devUiUrl + "/user-report/" + data.getUuid() + "\" target=\"_blank\">Click here</a> to access the full report detailing your system vulnerabilities.</p>\r\n"
 		 		+ "        <!-- Closing -->\r\n"
 		 		+ "        <p style=\"margin-bottom: 0;\">Thanks and Regards,<br>It-Ops</p>\r\n"
 		 		+ "      </div>\r\n"
 		 		+ "    </div>\r\n"
 		 		+ "  </body>\r\n"
 		 		+ "</html>";
+		
 	}
 	
 	@Override
