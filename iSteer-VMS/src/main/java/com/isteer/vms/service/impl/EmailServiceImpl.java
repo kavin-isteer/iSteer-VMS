@@ -155,7 +155,7 @@ class VulnerabilityEmailPreparator implements MimeMessagePreparator{
 		 		+ "          <strong>Note:</strong>\r\n"
 		 		+ "          <em>The numbers under Critical, High, Medium, and Low indicate the count of vulnerabilities detected at each severity level.</em>\r\n"
 		 		+ "        </p>\r\n"
-		 		+ "		   <p> <a href=\"" + devUiUrl + "/user-report/" + data.getUuid() + "\" target=\"_blank\">Click here</a> to access the full report detailing your system vulnerabilities.</p>\r\n"
+		 		+ "		   <p> <a href=\"" + devUiUrl + "/user/report/" + data.getUuid() + "\" target=\"_blank\">Click here</a> to access the full report detailing your system vulnerabilities.</p>\r\n"
 		 		+ "        <!-- Closing -->\r\n"
 		 		+ "        <p style=\"margin-bottom: 0;\">Thanks and Regards,<br>It-Ops</p>\r\n"
 		 		+ "      </div>\r\n"
