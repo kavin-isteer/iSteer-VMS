@@ -120,14 +120,14 @@ public class ComputerServiceImpl implements ComputerService {
 	private int finalizeStatus(int compStatus, int appStatus, boolean noUpdateRequired) {
 		log.debug("Finalizing status with computer status: {}, application status: {}, noUpdateRequired: {}",
 				compStatus, appStatus, noUpdateRequired);
+		if (compStatus == 1 && appStatus == 0 && !noUpdateRequired)
+			return 1;
+		if (compStatus == 1 && appStatus > 0 && !noUpdateRequired)
+			return 2;
 		if (appStatus == -1)
 			return -3;
 		if (compStatus == 1 && appStatus == 1)
 			return 4;
-		if (compStatus == 2 && appStatus == 0 && !noUpdateRequired)
-			return 1;
-		if (compStatus == 2 && appStatus > 0 && !noUpdateRequired)
-			return 2;
 		if (compStatus == 0 && appStatus == 0)
 			return 0;
 		if (compStatus == 0 && appStatus == 1)
@@ -159,7 +159,7 @@ public class ComputerServiceImpl implements ComputerService {
 	private boolean isTimestampEqual(LocalDateTime a, LocalDateTime b) {
 		if (a == null || b == null)
 			return a == b;
-		return a.truncatedTo(ChronoUnit.MINUTES).equals(b.truncatedTo(ChronoUnit.MINUTES));
+		return a.truncatedTo(ChronoUnit.SECONDS).equals(b.truncatedTo(ChronoUnit.SECONDS));
 	}
 
 	@Override
