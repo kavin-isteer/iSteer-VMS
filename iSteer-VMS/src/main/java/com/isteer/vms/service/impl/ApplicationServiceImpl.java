@@ -51,37 +51,37 @@ public class ApplicationServiceImpl implements ApplicationService {
 		// Fetch all existing applications and the specific computer's application mappings from the DB.
 		List<Application> existingApps = applicationDao.getAllApplications();
 		log.debug("Found {} existing applications in the database", existingApps.size());
-		List<ComputerApplication> existingCompApps = applicationDao.getApplicationsByComputerUuid(computerUuid);
-		log.debug("Found {} existing computer application mappings for computer UUID: {}", existingCompApps.size(), computerUuid);
+		List<ComputerApplication> existingComputerApps = applicationDao.getApplicationsByComputerUuid(computerUuid);
+		log.debug("Found {} existing computer application mappings for computer UUID: {}", existingComputerApps.size(), computerUuid);
 
 		// Create sets of unique keys for efficient lookups.
-		Set<String> appKeys = toKeySet(existingApps);
-		Set<String> compAppKeys = toKeySetFromCompApps(existingCompApps);
+		Set<String> existingAppKeys = toKeySet(existingApps);
+		Set<String> existingComputerAppKeys = toKeySetFromCompApps(existingComputerApps);
 
 		// Identify software from the payload that doesn't exist in the main applications table.
-		List<SoftwarePayloadDto> newSoftware = findNewSoftware(software, appKeys);
-		log.debug("Found {} new software entries to process", newSoftware.size());
-		if (!newSoftware.isEmpty()) {
+		List<SoftwarePayloadDto> newApplications = findNewSoftware(software, existingAppKeys);
+		log.debug("Found {} new software entries to process", newApplications.size());
+		if (!newApplications.isEmpty()) {
 			// Create records for the new software.
-			List<Application> inserted = createNewApplications(newSoftware);
-			if (inserted == null || inserted.isEmpty())
+			List<Application> insertedApps = createNewApplications(newApplications);
+			if (insertedApps == null || insertedApps.isEmpty())
 				return -1; // Return error code if insertion fails.
 			// Refresh the list and keyset with the newly inserted applications.
 			existingApps = applicationDao.getAllApplications(); 
-			appKeys.addAll(toKeySet(inserted));
+			existingAppKeys.addAll(toKeySet(insertedApps));
 		}
 		log.debug("Total applications after insertion: {}", existingApps.size());
 
 		// Handle the various states: uninstalled, reinstalled, and newly installed.
-		int deleted = handleDeletedApplications(software, existingCompApps);
-		int activated = handleActivatedApplications(software, existingCompApps);
-		int mapped = handleNewMappings(computerUuid, software, existingApps, appKeys, compAppKeys);
+		int deleted = handleDeletedApplications(software, existingComputerApps);
+		int reinstalled = handleActivatedApplications(software, existingComputerApps);
+		int mapped = handleNewMappings(computerUuid, software, existingApps, existingAppKeys, existingComputerAppKeys);
 
 		// Update running process IDs for all applications reported by the computer.
 		updateProcessIdsForComputerApplications(computerUuid, software, existingApps);
 		
 		// Determine the final summary status code.
-		return determineFinalStatus(mapped, deleted, activated);
+		return determineFinalStatus(mapped, deleted, reinstalled);
 	}
 
 	/**
@@ -98,7 +98,7 @@ public class ApplicationServiceImpl implements ApplicationService {
 		Map<String, String> keyToAppUuid = existingApps.stream()
 		        .collect(Collectors.toMap(this::key, Application::getUuid));
 		
-		List<ComputerApplication> compAppsToUpdate = new ArrayList<>();
+		List<ComputerApplication> computerAppsToUpdate = new ArrayList<>();
 
 		// For each software in the payload, find its application UUID and create an update object.
 	    for (SoftwarePayloadDto s : software) {
@@ -109,13 +109,13 @@ public class ApplicationServiceImpl implements ApplicationService {
 	            		.applicationUuid(appUuid)
 	            		.processIds(s.getRunningProcessIds())
 	            		.build();
-	            compAppsToUpdate.add(compApp);
+	            computerAppsToUpdate.add(compApp);
 	        }
 	    }
 	    
 	    // If there are applications to update, call the DAO to perform a batch update.
-	    if (!compAppsToUpdate.isEmpty()) {
-	        applicationDao.updateProcessIdsBatch(compAppsToUpdate);
+	    if (!computerAppsToUpdate.isEmpty()) {
+	        applicationDao.updateProcessIdsBatch(computerAppsToUpdate);
 	    }
 	}
 
@@ -143,23 +143,23 @@ public class ApplicationServiceImpl implements ApplicationService {
 	 * Filters the incoming software list to find entries that are not yet in the database.
 	 *
 	 * @param software      The full list of software from the computer.
-	 * @param existingKeys  A set of keys for all applications already in the database.
+	 * @param existingAppKeys  A set of keys for all applications already in the database.
 	 * @return A list of {@link SoftwarePayloadDto} for new software.
 	 */
-	private List<SoftwarePayloadDto> findNewSoftware(List<SoftwarePayloadDto> software, Set<String> existingKeys) {
-		return software.stream().filter(s -> !existingKeys.contains(key(s))).toList();
+	private List<SoftwarePayloadDto> findNewSoftware(List<SoftwarePayloadDto> software, Set<String> existingAppKeys) {
+		return software.stream().filter(s -> !existingAppKeys.contains(key(s))).toList();
 	}
 
 	/**
 	 * Identifies and marks computer-application mappings as deleted if the software is no longer reported by the computer.
 	 *
 	 * @param software         The current list of software on the computer.
-	 * @param existingCompApps The list of existing mappings for that computer.
+	 * @param existingComputerApps The list of existing mappings for that computer.
 	 * @return The result of the database update operation (1 for success, 0 for no change/failure).
 	 */
-	private int handleDeletedApplications(List<SoftwarePayloadDto> software, List<ComputerApplication> existingCompApps) {
+	private int handleDeletedApplications(List<SoftwarePayloadDto> software, List<ComputerApplication> existingComputerApps) {
 	    // Find active mappings that are NOT in the latest software payload.
-	    List<ComputerApplication> toDelete = existingCompApps.stream()
+	    List<ComputerApplication> toDelete = existingComputerApps.stream()
 	        .filter(ca -> !ca.isDeleted() && software.stream().noneMatch(s -> key(s).equals(key(ca))))
 	        .map(ca -> {
 	            // Set the flag to deleted and clear process IDs.
@@ -182,12 +182,12 @@ public class ApplicationServiceImpl implements ApplicationService {
 	 * Identifies and reactivates mappings for software that was previously marked as deleted but is now reported again.
 	 *
 	 * @param software         The current list of software on the computer.
-	 * @param existingCompApps The list of existing mappings for that computer.
+	 * @param existingComputerApps The list of existing mappings for that computer.
 	 * @return The result of the database update operation (1 for success, 0 for no change/failure).
 	 */
-	private int handleActivatedApplications(List<SoftwarePayloadDto> software, List<ComputerApplication> existingCompApps) {
+	private int handleActivatedApplications(List<SoftwarePayloadDto> software, List<ComputerApplication> existingComputerApps) {
 	    // Find deleted mappings that ARE present in the latest software payload.
-	    List<ComputerApplication> toActivate = existingCompApps.stream()
+	    List<ComputerApplication> toActivate = existingComputerApps.stream()
 	        .filter(ComputerApplication::isDeleted) // Filter for already deleted ones
 	        .filter(ca -> software.stream().anyMatch(s -> key(s).equals(key(ca)))) // Check if they are back
 	        .map(ca -> {
@@ -216,10 +216,10 @@ public class ApplicationServiceImpl implements ApplicationService {
 	 * @return The result of the database insert operation.
 	 */
 	private int handleNewMappings(String computerUuid, List<SoftwarePayloadDto> software,
-			List<Application> existingApps, Set<String> appKeys, Set<String> compAppKeys) {
+			List<Application> existingApps, Set<String> existingAppKeys, Set<String> existingComputerAppKeys) {
 		// Find keys from the payload that exist in the main app table but not in this computer's mappings.
 		List<String> newKeys = software.stream().map(this::key)
-				.filter(k -> !compAppKeys.contains(k) && appKeys.contains(k)).toList();
+				.filter(k -> !existingComputerAppKeys.contains(k) && existingAppKeys.contains(k)).toList();
 		log.info("Found {} new mappings for computer UUID: {}", newKeys.size(), computerUuid);
 
 		if (newKeys.isEmpty()) {
@@ -288,9 +288,17 @@ public class ApplicationServiceImpl implements ApplicationService {
 	}
 
 	// Overloaded key methods for convenience with different object types.
-	private String key(SoftwarePayloadDto dto) { return key(dto.getSoftwareName(), dto.getSoftwareVersion(), dto.getVendorName()); }
-	private String key(Application app) { return key(app.getSoftwareName(), app.getSoftwareVersion(), app.getVendorName()); }
-	private String key(ComputerApplication app) { return key(app.getSoftwareName(), app.getSoftwareVersion(), app.getVendorName()); }
+	private String key(SoftwarePayloadDto dto) {
+		return key(dto.getSoftwareName(), dto.getSoftwareVersion(), dto.getVendorName());
+		}
+	
+	private String key(Application app) {
+		return key(app.getSoftwareName(), app.getSoftwareVersion(), app.getVendorName());
+		}
+	
+	private String key(ComputerApplication app) {
+		return key(app.getSoftwareName(), app.getSoftwareVersion(), app.getVendorName());
+		}
 	
 
 	/**
@@ -308,9 +316,9 @@ public class ApplicationServiceImpl implements ApplicationService {
 				.toList();
 
 		log.debug("Creating {} new applications in the database", applications.size());
-		int status = applicationDao.insertApplications(applications);
+		int insertStatus = applicationDao.insertApplications(applications);
 
-		if (status == 0) {
+		if (insertStatus == 0) {
 			log.error("Failed to insert new applications into the database");
 			throw new BusinessException(ResponseCode.APPLICATION_ERROR.getMessage(), 500);
 		}
