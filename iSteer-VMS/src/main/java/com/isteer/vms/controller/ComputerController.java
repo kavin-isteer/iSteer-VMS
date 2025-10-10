@@ -1,14 +1,23 @@
 package com.isteer.vms.controller;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -235,6 +244,46 @@ public class ComputerController {
 				computerDetails.getApplicationDetails().size());
 		return ResponseEntity.ok(computerDetails);
 
+	}
+
+	@GetMapping("/downloadAgent")
+	public ResponseEntity<Object> downloadAgent() {
+		log.info("Received request to download agent file.");
+		Path workingDir = Paths.get("").toAbsolutePath();
+		Path agentDir = workingDir.resolve("Agent");
+
+		if (!Files.exists(agentDir) || !Files.isDirectory(agentDir)) {
+			log.error("Agent directory not found at path: {}", agentDir.toString());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Agent directory not found.");
+		}
+
+		try {
+			Optional<Path> zipFileOpt = Files.list(agentDir).filter(path -> {
+				String fileName = path.getFileName().toString();
+				return (fileName.endsWith(".zip") || fileName.endsWith(".ZIP")) && fileName.contains("IsteerAgent");
+			}).findFirst();
+
+			if (zipFileOpt.isEmpty()) {
+				// No ZIP file found — handle error or return 404
+				log.error("No ZIP file found in the name IsteerAgent in Agent directory: {} ", agentDir.toString());
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+						.body("No ZIP file found in the name IsteerAgent in Agent directory");
+			}
+
+			Path zipFile = zipFileOpt.get();
+			log.info("Found ZIP file: {}", zipFile.toString());
+			
+			InputStreamResource agentFile = new InputStreamResource(new FileInputStream(zipFile.toFile()));
+			return ResponseEntity.status(HttpStatus.OK)
+					.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + zipFile.getFileName().toString())
+					.contentType(MediaType.APPLICATION_OCTET_STREAM).body(agentFile);
+		} catch (FileNotFoundException e) {
+			log.error("Agent ZIP file not found: {}", e.getMessage());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Agent ZIP file not found.");
+		} catch (IOException e) {
+			log.error("Error reading agent ZIP file: {}", e.getMessage());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error reading agent ZIP file.");
+		}
 	}
 
 }
