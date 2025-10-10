@@ -1,8 +1,9 @@
 package com.isteer.vms.dto;
 
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -63,7 +64,8 @@ public class ComputerPayloadDto {
 	private LocalDateTime lastUpdateCheck;
 	
 	@NotNull(message = "Timestamp cannot be blank")
-	private OffsetDateTime timestamp;
+	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+	private LocalDateTime timestamp;
 	
 	public String getDeviceId() {
 		return deviceId;
@@ -132,18 +134,19 @@ public class ComputerPayloadDto {
 		this.lastUpdateCheck = lastUpdateCheck;
 	}
 	public LocalDateTime getTimestamp() {
-		return timestamp.toLocalDateTime();
+		return timestamp;
 	}
-	public void setTimestamp(OffsetDateTime timestamp) {
+	public void setTimestamp(LocalDateTime timestamp) {
 		this.timestamp = timestamp;
 	}
 	
 	@Override
 	public String toString() {
-		return "ComputerPayloadDto [deviceId=" + deviceId + ", machineName=" + machineName + ", ipAddress=" + ipAddress
-				+ ", osVersion=" + osVersion + ", antivirusStatus=" + antivirusStatus + ", firewallStatus="
-				+ firewallStatus + ", loggedInUser=" + loggedInUser + ", installedSoftwares=" + installedSoftwares
-				+ ", lastUpdateCheck=" + lastUpdateCheck + ", timestamp=" + getTimestamp() + "]";
+		return "ComputerPayloadDto [deviceId=" + deviceId + ", machineName=" + machineName + ", serialNumber="
+				+ serialNumber + ", macAddress=" + macAddress + ", ipAddress=" + ipAddress + ", osVersion=" + osVersion
+				+ ", antivirusStatus=" + antivirusStatus + ", firewallStatus=" + firewallStatus + ", loggedInUser="
+				+ loggedInUser + ", installedSoftwares=" + installedSoftwares + ", lastUpdateCheck=" + lastUpdateCheck
+				+ ", timestamp=" + timestamp + "]";
 	}
 	
 }
