@@ -28,6 +28,17 @@ public class UserDaoImpl implements UserDao{
 			return null;
 		}
 	}
+
+	@Override
+	public boolean isAuthorized(String endpoint, int roleId) {
+		String query = "SELECT COUNT(*) FROM api_access WHERE apiPath=? AND roleId=?";
+		try {
+			Integer count = jdbcTemplate.queryForObject(query, Integer.class, endpoint, roleId);
+			return count != null && count > 0;
+		} catch (EmptyResultDataAccessException e) {
+			return false;
+		}
+	}
 }
 	/**
 	 * Inner class to map a row from the 'users' table to a User object.

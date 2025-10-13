@@ -73,7 +73,11 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter{
 	            response.getWriter().println("{\"message\":\"Invalid username or password\"}");
 	        }
 	        return;
-	    }else if(!authenticated) {
+	    }else if(jwtToken == null || jwtToken.isEmpty()) {
+	    	filterChain.doFilter(request, response);
+	        return;
+	    	
+	    } else if(!authenticated) {
 	    	response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 	        PrintWriter writer = response.getWriter();
 	        writer.println("{\"message\":\"Unauthorized: Invalid or missing token\"}");

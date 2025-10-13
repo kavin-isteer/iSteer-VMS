@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import com.isteer.vms.dto.AuthenticationStatus;
 import com.isteer.vms.enums.AuthenticationStatusEnum;
+import com.isteer.vms.model.User;
 import com.isteer.vms.security.TokenManager;
 import com.isteer.vms.security.UserContext;
 import com.isteer.vms.service.AuthenticationService;
@@ -64,5 +65,14 @@ public class AuthenticationServiceImpl implements AuthenticationService{
 		SecurityContextHolder.clearContext();
 		log.info("User logged out successfully");
 	}
-
+	
+	@Override
+	public User currentUser() {
+		if (SecurityContextHolder.getContext() != null && SecurityContextHolder.getContext().getAuthentication() != null
+				&& SecurityContextHolder.getContext().getAuthentication().getPrincipal() != null) {
+			UserContext usercon = (UserContext) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+			return usercon.getUser();
+		} else
+			return null;
+	}
 }

@@ -30,6 +30,8 @@ public class SecurityConfiguration {
 		http.csrf(csrf->csrf.disable());
 		http.authorizeHttpRequests(req->{
 		    req.requestMatchers("/login","/logout").permitAll();
+		    req.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll();
+		    req.requestMatchers("/applications/unresolved","/computers","/getComputer/**").permitAll();
 			req.anyRequest().authenticated();
 		});
 		http.sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
