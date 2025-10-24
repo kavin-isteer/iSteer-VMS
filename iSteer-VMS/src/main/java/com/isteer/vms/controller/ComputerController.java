@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -185,7 +184,9 @@ public class ComputerController {
 		}
 		return ResponseUtil.message(code.getCode(), code.getMessage(), statusCode);
 	}
-
+	
+	//Unused currently, but may be used in future
+	@SuppressWarnings("unused")
 	@Operation(summary = "Get all vulnerable computers", description = "This endpoint retrieves a list of all computers that have vulnerabilities. "
 			+ "It returns a list of ComputerResponseDto objects containing the details of each vulnerable computer. "
 			+ "If no vulnerable computers are found, it returns a not found response. "

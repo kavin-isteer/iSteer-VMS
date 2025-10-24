@@ -345,7 +345,8 @@ public class ApplicationServiceImpl implements ApplicationService {
 				.toList();
 	}
 
-	
+	// Currently unused, but may be utilized in future enhancements.
+	@SuppressWarnings("unused")
 	@Override
 	public List<Application> getAllApplications(String isVulnerable) {
 		// If the filter parameter is provided, use the filtered DAO method.
@@ -356,7 +357,6 @@ public class ApplicationServiceImpl implements ApplicationService {
 		return applicationDao.getAllApplications();
 	}
 
-	
 	@Override
 	public List<ApplicationResponseDto> getApplicationDetails(String computerUuid) {
 		log.debug("Fetching application details for computer UUID: {}", computerUuid);

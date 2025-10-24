@@ -114,26 +114,6 @@ public class ComputerServiceImpl implements ComputerService {
 				.timestamp(computerPayload.getTimestamp()).build();
 	}
 
-	private int finalizeStatus(int computerStatus, int applicationStatus, boolean noUpdateRequired) {
-		log.debug("Finalizing status with computer status: {}, application status: {}, noUpdateRequired: {}",
-				computerStatus, applicationStatus, noUpdateRequired);
-		if (computerStatus == 1 && applicationStatus == 0 && !noUpdateRequired)
-			return 1;
-		if (computerStatus == 1 && applicationStatus > 0 && !noUpdateRequired)
-			return 2;
-		if (applicationStatus == -1)
-			return -3;
-		if (computerStatus == 1 && applicationStatus == 1)
-			return 4;
-		if (computerStatus == 0 && applicationStatus == 0)
-			return 0;
-		if (computerStatus == 0 && applicationStatus == 1)
-			return 3;
-		if (computerStatus == 0 && applicationStatus == 2)
-			return 3;
-		return -4;
-	}
-
 	private boolean checkIfUpdateRequired(ComputerPayloadDto computerPayload, Computer existingComputer) {
 		log.debug("Checking if update is required for computer with deviceId: {}", existingComputer.getDeviceId());
 		return isEqual(existingComputer.getMachineName(), computerPayload.getMachineName())
@@ -156,8 +136,29 @@ public class ComputerServiceImpl implements ComputerService {
 	private boolean isTimestampEqual(LocalDateTime a, LocalDateTime b) {
 		if (a == null || b == null)
 			return a == b;
-		return a.truncatedTo(ChronoUnit.SECONDS).equals(b.truncatedTo(ChronoUnit.SECONDS));
+		return a.truncatedTo(ChronoUnit.MINUTES).equals(b.truncatedTo(ChronoUnit.MINUTES));
 	}
+	
+	private int finalizeStatus(int computerStatus, int applicationStatus, boolean noUpdateRequired) {
+		log.debug("Finalizing status with computer status: {}, application status: {}, noUpdateRequired: {}",
+				computerStatus, applicationStatus, noUpdateRequired);
+		if (computerStatus == 1 && applicationStatus == 0 && !noUpdateRequired)
+			return 1;
+		if (computerStatus == 1 && applicationStatus > 0 && !noUpdateRequired)
+			return 2;
+		if (applicationStatus == -1)
+			return -3;
+		if (computerStatus == 1 && applicationStatus == 1)
+			return 4;
+		if (computerStatus == 0 && applicationStatus == 0)
+			return 0;
+		if (computerStatus == 0 && applicationStatus == 1)
+			return 3;
+		if (computerStatus == 0 && applicationStatus == 2)
+			return 3;
+		return -4;
+	}
+
 
 	@Override
 	public DashboardMetricsDto getDashboardMetrics() {
