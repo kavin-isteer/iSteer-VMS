@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -31,6 +30,8 @@ public class ApplicationController {
 		this.applicationService = applicationService;
 	}
 	
+//	Unused currently, but may be used in future
+	@SuppressWarnings("unused")
 	@Operation(summary = "Get all applications", description = "This endpoint retrieves all applications from the database. "
 			+ "It can filter applications based on their vulnerability status if the 'isVulnerable' parameter is provided. "
 			+ "If no applications are found, it returns a No Content response.", responses = {

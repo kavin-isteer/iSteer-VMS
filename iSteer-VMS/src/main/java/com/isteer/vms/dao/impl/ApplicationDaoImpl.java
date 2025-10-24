@@ -58,6 +58,8 @@ public class ApplicationDaoImpl implements ApplicationDao {
 		}
 	}
 
+	//Unused currently, but may be utilized in future
+	@SuppressWarnings("unused")
 	/**
 	 * Retrieves applications based on their vulnerability status.
 	 *
